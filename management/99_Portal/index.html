@@ -72,7 +72,7 @@
 <body>
     <header class="header">
         <h1>セラピスト向け顧客管理アプリ</h1>
-        <p>Project Portal Hub <span style="background: var(--accent-secondary); color: #fff; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: bold; margin-left: 8px;">v1.5.9</span></p>
+        <p>Project Portal Hub <span style="background: var(--accent-secondary); color: #fff; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: bold; margin-left: 8px;">v1.5.10</span></p>
         <div style="margin-top: 20px; display: inline-flex; align-items: center; gap: 10px; background: var(--card-bg); padding: 8px 16px; border-radius: 20px; border: 1px solid var(--glass-border); backdrop-filter: blur(10px);">
             <span style="font-size: 0.85rem; color: var(--text-dim);">🌙 Dark</span>
             <input type="range" id="theme-slider" min="0" max="100" value="0" style="width: 120px; accent-color: var(--accent-primary); cursor: pointer;" title="テーマ輝度ブレンド">
@@ -130,6 +130,14 @@
             <div style="font-size: 1.3rem; font-weight: 600; margin-bottom: 16px;">ポータル改善履歴</div>
             
             <details class="issue-card" open style="background: rgba(0,0,0,0.2); padding: 16px; border-radius: 12px; border: 1px solid var(--glass-border); text-align: left; margin-bottom: 12px;">
+                <summary style="font-weight: 600; cursor: pointer; color: var(--accent-primary);">v1.5.10 - スマホ画面でカレンダーが横に見切れるバグの修正 (ISSUE-017)</summary>
+                <div style="margin-top: 12px; font-size: 0.9rem; color: var(--text-dim); line-height: 1.6;">
+                    <p style="margin: 0 0 8px 0;">スマホ幅（375〜390px）で土曜日の列と月送りボタンが右端で見切れていました。<code>aspect-ratio</code> は min/max 制約を軸間で転写するため、<code>.calendar-day</code> の <code>min-height: 48px</code> が「最小幅48px」としても作用し、カレンダー全体に458pxの最小幅が生まれていたことが原因です。最小サイズの解除・<code>minmax(0, 1fr)</code> 化に加え、これまで1つも存在しなかった <code>@media</code> クエリを新設しました。ヘッドレスブラウザで390px幅を再現し、<strong>はみ出し要素0件</strong>を実測確認済みです。</p>
+                    <a href="viewer.html?doc=../03_Implementation/REPORT-ISSUE-017.md" style="display: inline-flex; text-decoration: none; padding: 6px 12px; font-size: 0.8rem; border-radius: 8px; margin-top: 8px; background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary)); color: #fff; font-weight: bold; border: none;">📖 詳細レポートを開く →</a>
+                </div>
+            </details>
+
+            <details class="issue-card" style="background: rgba(0,0,0,0.2); padding: 16px; border-radius: 12px; border: 1px solid var(--glass-border); text-align: left; margin-bottom: 12px;">
                 <summary style="font-weight: 600; cursor: pointer; color: var(--accent-primary);">[CHORE] v1.5.9 - Vercelデプロイ対象をアプリ単体に限定・トップページ化 (ISSUE-016)</summary>
                 <div style="margin-top: 12px; font-size: 0.9rem; color: var(--text-dim); line-height: 1.6;">
                     <p style="margin: 0 0 8px 0;">Vercelの配信対象を <code>product/</code>（顧客管理アプリ）のみに限定し、顧客一覧画面がトップページ（<code>/</code>）に来るよう設定を変更しました。<code>.vercelignore</code> で管理ポータル・開発用ランチパッド・ブリッジサーバを除外し、<code>vercel.json</code> に <code>outputDirectory: "product"</code> を追加しています。あわせて、本番では404となっていたフローティングチャット（<code>.agent/</code> 配下を参照＝Git管理外）を <code>product/js/vendor/</code> へ同梱し、アプリを自己完結させました。<strong>設定変更のためバージョンは v1.5.9 据え置きです。</strong>管理ポータルは今後ローカルでのみ閲覧します。</p>

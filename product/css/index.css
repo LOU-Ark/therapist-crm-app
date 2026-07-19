@@ -628,9 +628,13 @@ textarea.form-control {
 
 .calendar-grid {
     display: grid;
-    grid-template-columns: repeat(7, 1fr);
+    /* [BUGFIX ISSUE-017] 1fr は暗黙に min-width:auto を持ち、セルの内容幅より
+       狭くできないためスマホで横に溢れる。minmax(0, 1fr) で最小幅の下限を外し、
+       常にコンテナ幅ぴったりに7列を収める。 */
+    grid-template-columns: repeat(7, minmax(0, 1fr));
     gap: 8px;
     text-align: center;
+    width: 100%;
 }
 
 .calendar-weekday {
@@ -643,7 +647,12 @@ textarea.form-control {
 
 .calendar-day {
     aspect-ratio: 1;
-    min-height: 48px;
+    /* [BUGFIX ISSUE-017] aspect-ratio は min/max 制約を軸間で転写するため、
+       min-height:48px が「最小幅48px」として効いてしまい、
+       7列で 48*7+8*6=384px の下限が生まれてスマホ幅を超過していた。
+       最小サイズの下限を外し、列幅に追従する正方形セルにする。 */
+    min-width: 0;
+    min-height: 0;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -721,3 +730,57 @@ textarea.form-control {
     border-color: var(--accent-cyan);
 }
 
+
+/* ------------------------------------------------------------------
+   8. レスポンシブ対応（スマホ）  [ISSUE-017]
+   横方向の余白を詰めて、カレンダーの7列が画面幅に収まるようにする。
+   body に overflow-x: hidden があるため、溢れるとスクロールできず
+   「見切れ」になってしまう。したがって溢れさせないことが必須。
+   ------------------------------------------------------------------ */
+@media (max-width: 640px) {
+    main {
+        padding: 12px;
+        gap: 12px;
+    }
+
+    .calendar-view-section {
+        padding: 12px;
+        border-radius: 16px;
+        gap: 12px;
+    }
+
+    .calendar-grid {
+        gap: 4px;
+    }
+
+    .calendar-day {
+        padding: 2px;
+        border-radius: 8px;
+    }
+
+    .calendar-day-num {
+        font-size: 0.8rem;
+    }
+
+    .calendar-dot {
+        width: 5px;
+        height: 5px;
+    }
+
+    .calendar-weekday {
+        font-size: 0.7rem;
+    }
+
+    .calendar-title {
+        font-size: 1rem;
+    }
+
+    .calendar-nav-btn {
+        padding: 6px 10px;
+    }
+
+    /* 施術記録カードも縦積みにして溢れを防ぐ */
+    .calendar-visit-item {
+        padding: 10px 12px;
+    }
+}

@@ -1,0 +1,723 @@
+/* セラピスト向け顧客管理アプリ：コアデザインシステム */
+
+/* 1. 変数定義 (HSLカラーパレットとダーク/ライトテーマブレンド) */
+:root {
+    --theme-blend: 0%; /* 0%がDark、100%がLight。ポータルのスライダー等と同様 */
+    
+    /* 背景色 (ダーク＝深藍、ライト＝柔らかい白) */
+    --bg-base: color-mix(in srgb, #f8fafc var(--theme-blend), #0f172a);
+    --bg-surface: color-mix(in srgb, rgba(255, 255, 255, 0.8) var(--theme-blend), rgba(30, 41, 59, 0.7));
+    
+    /* 文字色 */
+    --text-primary: color-mix(in srgb, #0f172a var(--theme-blend), #f8fafc);
+    --text-secondary: color-mix(in srgb, #475569 var(--theme-blend), #94a3b8);
+    
+    /* ガラスモフィズム・ボーダー */
+    --border-glass: color-mix(in srgb, rgba(15, 23, 42, 0.08) var(--theme-blend), rgba(255, 255, 255, 0.08));
+    --border-active: color-mix(in srgb, #00f2fe, #7367f0);
+    
+    /* アクセントカラー */
+    --accent-cyan: #00f2fe;
+    --accent-purple: #7367f0;
+    --accent-success: #10b981;
+    --accent-warning: #f59e0b;
+    --accent-danger: #ef4444;
+
+    /* トランジション */
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* 2. リセット & 基本設定 */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    -webkit-tap-highlight-color: transparent; /* タップ時の青い枠線を消す */
+}
+
+body {
+    font-family: 'Inter', 'Noto Sans JP', sans-serif;
+    background: var(--bg-base);
+    background-image: 
+        radial-gradient(at 0% 0%, rgba(0, 242, 254, 0.1) 0, transparent 40%),
+        radial-gradient(at 100% 100%, rgba(115, 103, 240, 0.1) 0, transparent 40%);
+    color: var(--text-primary);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow-x: hidden;
+}
+
+/* 3. レイアウト (スマホファースト) */
+header {
+    padding: 16px 20px;
+    background: var(--bg-surface);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border-glass);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+header h1 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    background: linear-gradient(90deg, var(--accent-cyan), var(--accent-purple));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+main {
+    flex: 1;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    max-width: 1200px; /* ワイド幅に対応 */
+    width: 100%;
+    margin: 0 auto;
+}
+
+/* ワークスペースグリッド設計 */
+.workspace-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 20px;
+    align-items: start;
+    width: 100%;
+}
+
+/* 一覧時は詳細を非表示、詳細表示（detail-mode）時は一覧を非表示にする */
+.workspace-grid .workspace-column-right {
+    display: none;
+}
+.workspace-grid.detail-mode .workspace-column-left {
+    display: none;
+}
+.workspace-grid.detail-mode .workspace-column-right {
+    display: block;
+}
+
+/* カレンダーモード時はカレンダーを全画面表示し、詳細は非表示 */
+.workspace-grid.calendar-mode .workspace-column-left {
+    display: block;
+}
+.workspace-grid.calendar-mode .workspace-column-right {
+    display: none !important;
+}
+
+.workspace-column-left {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    width: 100%;
+}
+
+.workspace-column-right {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    width: 100%;
+}
+
+
+.calendar-visit-item:hover {
+    transform: translateX(4px);
+    border-color: var(--accent-cyan);
+}
+
+/* 7. 顧客グリッドカード表示用UI */
+.customer-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 16px;
+    width: 100%;
+}
+
+.customer-card-grid-item {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-glass);
+    border-radius: 20px;
+    padding: 20px;
+    cursor: pointer;
+    transition: var(--transition-smooth);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    min-height: 120px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+}
+
+.customer-card-grid-item:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+}
+
+/* 各色ごとの微細な背景色ブレンドと枠線発光 */
+.customer-card-grid-item.soul-card-red {
+    border-color: rgba(239, 68, 68, 0.3);
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.12) 0%, var(--bg-surface) 100%);
+}
+.customer-card-grid-item.soul-card-red:hover { border-color: #ef4444; box-shadow: 0 0 16px rgba(239, 68, 68, 0.3); }
+
+.customer-card-grid-item.soul-card-coral {
+    border-color: rgba(248, 113, 113, 0.3);
+    background: linear-gradient(135deg, rgba(248, 113, 113, 0.12) 0%, var(--bg-surface) 100%);
+}
+.customer-card-grid-item.soul-card-coral:hover { border-color: #f87171; box-shadow: 0 0 16px rgba(248, 113, 113, 0.3); }
+
+.customer-card-grid-item.soul-card-orange {
+    border-color: rgba(251, 146, 60, 0.3);
+    background: linear-gradient(135deg, rgba(251, 146, 60, 0.12) 0%, var(--bg-surface) 100%);
+}
+.customer-card-grid-item.soul-card-orange:hover { border-color: #fb923c; box-shadow: 0 0 16px rgba(251, 146, 60, 0.3); }
+
+.customer-card-grid-item.soul-card-gold {
+    border-color: rgba(251, 191, 36, 0.3);
+    background: linear-gradient(135deg, rgba(251, 191, 36, 0.12) 0%, var(--bg-surface) 100%);
+}
+.customer-card-grid-item.soul-card-gold:hover { border-color: #fbbf24; box-shadow: 0 0 16px rgba(251, 191, 36, 0.3); }
+
+.customer-card-grid-item.soul-card-yellow {
+    border-color: rgba(250, 204, 21, 0.3);
+    background: linear-gradient(135deg, rgba(250, 204, 21, 0.12) 0%, var(--bg-surface) 100%);
+}
+.customer-card-grid-item.soul-card-yellow:hover { border-color: #facc15; box-shadow: 0 0 16px rgba(250, 204, 21, 0.3); }
+
+.customer-card-grid-item.soul-card-olive {
+    border-color: rgba(163, 230, 53, 0.3);
+    background: linear-gradient(135deg, rgba(163, 230, 53, 0.12) 0%, var(--bg-surface) 100%);
+}
+.customer-card-grid-item.soul-card-olive:hover { border-color: #a3e635; box-shadow: 0 0 16px rgba(163, 230, 53, 0.3); }
+
+.customer-card-grid-item.soul-card-green {
+    border-color: rgba(74, 222, 128, 0.3);
+    background: linear-gradient(135deg, rgba(74, 222, 128, 0.12) 0%, var(--bg-surface) 100%);
+}
+.customer-card-grid-item.soul-card-green:hover { border-color: #4ade80; box-shadow: 0 0 16px rgba(74, 222, 128, 0.3); }
+
+.customer-card-grid-item.soul-card-turquoise {
+    border-color: rgba(45, 212, 191, 0.3);
+    background: linear-gradient(135deg, rgba(45, 212, 191, 0.12) 0%, var(--bg-surface) 100%);
+}
+.customer-card-grid-item.soul-card-turquoise:hover { border-color: #2dd4bf; box-shadow: 0 0 16px rgba(45, 212, 191, 0.3); }
+
+.customer-card-grid-item.soul-card-blue {
+    border-color: rgba(96, 165, 250, 0.3);
+    background: linear-gradient(135deg, rgba(96, 165, 250, 0.12) 0%, var(--bg-surface) 100%);
+}
+.customer-card-grid-item.soul-card-blue:hover { border-color: #60a5fa; box-shadow: 0 0 16px rgba(96, 165, 250, 0.3); }
+
+.customer-card-grid-item.soul-card-royal-blue {
+    border-color: rgba(59, 130, 246, 0.3);
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.12) 0%, var(--bg-surface) 100%);
+}
+.customer-card-grid-item.soul-card-royal-blue:hover { border-color: #3b82f6; box-shadow: 0 0 16px rgba(59, 130, 246, 0.3); }
+
+.customer-card-grid-item.soul-card-violet {
+    border-color: rgba(167, 139, 250, 0.3);
+    background: linear-gradient(135deg, rgba(167, 139, 250, 0.12) 0%, var(--bg-surface) 100%);
+}
+.customer-card-grid-item.soul-card-violet:hover { border-color: #a78bfa; box-shadow: 0 0 16px rgba(167, 139, 250, 0.3); }
+
+.customer-card-grid-item.soul-card-magenta {
+    border-color: rgba(236, 72, 153, 0.3);
+    background: linear-gradient(135deg, rgba(236, 72, 153, 0.12) 0%, var(--bg-surface) 100%);
+}
+.customer-card-grid-item.soul-card-magenta:hover { border-color: #ec4899; box-shadow: 0 0 16px rgba(236, 72, 153, 0.3); }
+
+.customer-card-grid-item.soul-card-clear {
+    border-color: var(--border-glass);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.02) 0%, var(--bg-surface) 100%);
+}
+.customer-card-grid-item.soul-card-clear:hover { border-color: var(--text-secondary); box-shadow: 0 0 12px rgba(255, 255, 255, 0.1); }
+
+
+
+/* 4. コンポーネント */
+
+/* 検索 & 追加バー */
+.search-container {
+    display: flex;
+    gap: 8px;
+}
+
+.search-input {
+    flex: 1;
+    padding: 12px 16px;
+    border-radius: 14px;
+    border: 1px solid var(--border-glass);
+    background: var(--bg-surface);
+    color: var(--text-primary);
+    font-size: 0.95rem;
+    transition: var(--transition-smooth);
+}
+
+.search-input:focus {
+    outline: none;
+    border-color: var(--accent-cyan);
+    box-shadow: 0 0 10px rgba(0, 242, 254, 0.2);
+}
+
+.btn-primary {
+    padding: 12px 16px;
+    border-radius: 14px;
+    border: none;
+    background: linear-gradient(135deg, var(--accent-cyan) 0%, var(--accent-purple) 100%);
+    color: #fff;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition-smooth);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    box-shadow: 0 4px 12px rgba(115, 103, 240, 0.3);
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(115, 103, 240, 0.4);
+}
+
+.btn-primary:active {
+    transform: translateY(0);
+}
+
+
+.customer-card {
+    background: var(--bg-surface);
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--border-glass);
+    border-radius: 16px;
+    padding: 16px;
+    cursor: pointer;
+    transition: var(--transition-smooth);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.customer-card:hover {
+    transform: translateX(4px);
+    border-color: var(--accent-cyan);
+}
+
+.customer-info h3 {
+    font-size: 1.05rem;
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+
+.customer-info p {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+/* 詳細モーダル/ビュー */
+.detail-view {
+    background: var(--bg-surface);
+    backdrop-filter: blur(16px);
+    border: 1px solid var(--border-glass);
+    border-radius: 24px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* 4つの切替タブボタン */
+.tab-container {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+    background: rgba(0, 0, 0, 0.2);
+    padding: 4px;
+    border-radius: 14px;
+}
+
+.tab-btn {
+    padding: 10px 4px;
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+    font-weight: 600;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: var(--transition-smooth);
+    text-align: center;
+}
+
+.tab-btn.active {
+    background: var(--bg-surface);
+    color: var(--accent-cyan);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* タブコンテンツ領域 */
+.tab-content {
+    min-height: 200px;
+    max-height: 400px;
+    overflow-y: auto;
+    padding: 4px;
+}
+
+/* 各種リストアイテム（履歴など） */
+.history-item {
+    padding: 12px;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 12px;
+    margin-bottom: 8px;
+    border-left: 3px solid var(--accent-purple);
+}
+
+.history-item.amount {
+    border-left-color: var(--accent-success);
+}
+
+.history-item-header {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin-bottom: 4px;
+}
+
+.history-item-body {
+    font-size: 0.95rem;
+    line-height: 1.4;
+}
+
+/* モーダル背景 */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(8px);
+    display: flex;
+    align-items: flex-end; /* スマホの下部ハーフモーダル風 */
+    justify-content: center;
+    z-index: 1000;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+}
+
+.modal-overlay.active {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.modal-content {
+    background: var(--bg-base);
+    width: 100%;
+    max-width: 600px;
+    border-radius: 24px 24px 0 0;
+    padding: 24px;
+    box-shadow: 0 -10px 25px rgba(0, 0, 0, 0.3);
+    transform: translateY(100%);
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.modal-overlay.active .modal-content {
+    transform: translateY(0);
+}
+
+/* フォーム関連 */
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.form-group label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.form-control {
+    padding: 12px;
+    border-radius: 12px;
+    border: 1px solid var(--border-glass);
+    background: var(--bg-surface);
+    color: var(--text-primary);
+    font-size: 0.95rem;
+    transition: var(--transition-smooth);
+}
+
+.form-control:focus {
+    outline: none;
+    border-color: var(--accent-cyan);
+}
+
+textarea.form-control {
+    resize: none;
+    min-height: 80px;
+}
+
+/* ローディング表示 */
+.loading-spinner {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100px;
+}
+
+.spinner {
+    width: 32px;
+    height: 32px;
+    border: 3px solid rgba(0, 242, 254, 0.1);
+    border-top-color: var(--accent-cyan);
+    border-radius: 50%;
+    animation: spin 1s infinite linear;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+@keyframes slideUp {
+    from { transform: translateY(20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}/* 5. ソウルカラー表示・選択用UI */
+.soul-color-selector {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 8px;
+    background: rgba(0, 0, 0, 0.15);
+    border-radius: 12px;
+    border: 1px solid var(--border-glass);
+    margin-top: 4px;
+}
+
+.color-chip {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: var(--transition-smooth);
+    border: 2px solid transparent;
+    position: relative;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.color-chip:hover {
+    transform: scale(1.15);
+}
+
+.color-chip.active {
+    border-color: #fff;
+    box-shadow: 0 0 12px rgba(255, 255, 255, 0.8), 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+/* 各色のバックグラウンド定義 */
+.color-chip.red { background-color: #ef4444; }
+.color-chip.coral { background-color: #f87171; }
+.color-chip.orange { background-color: #fb923c; }
+.color-chip.gold { background-color: #fbbf24; }
+.color-chip.yellow { background-color: #facc15; }
+.color-chip.olive { background-color: #a3e635; }
+.color-chip.green { background-color: #4ade80; }
+.color-chip.turquoise { background-color: #2dd4bf; }
+.color-chip.blue { background-color: #60a5fa; }
+.color-chip.royal-blue { background-color: #3b82f6; }
+.color-chip.violet { background-color: #a78bfa; }
+.color-chip.magenta { background-color: #ec4899; }
+.color-chip.clear { background: linear-gradient(135deg, #e2e8f0 0%, #94a3b8 100%); }
+
+/* 顧客リスト内のカラーインジケーター */
+.customer-color-indicator {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 8px;
+    vertical-align: middle;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    border: 1px solid rgba(255,255,255,0.2);
+}
+
+/* 各色インジケーターのバックグラウンドクラス */
+.bg-red { background-color: #ef4444; }
+.bg-coral { background-color: #f87171; }
+.bg-orange { background-color: #fb923c; }
+.bg-gold { background-color: #fbbf24; }
+.bg-yellow { background-color: #facc15; }
+.bg-olive { background-color: #a3e635; }
+.bg-green { background-color: #4ade80; }
+.bg-turquoise { background-color: #2dd4bf; }
+.bg-blue { background-color: #60a5fa; }
+.bg-royal-blue { background-color: #3b82f6; }
+.bg-violet { background-color: #a78bfa; }
+.bg-magenta { background-color: #ec4899; }
+.bg-clear { background: linear-gradient(135deg, #e2e8f0 0%, #94a3b8 100%); }
+
+/* プレミアムなカラーバッジ（詳細用） */
+.soul-color-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border-glass);
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+.soul-color-badge-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+}
+
+/* 6. カレンダー表示用UI */
+.calendar-view-section {
+    background: var(--bg-surface);
+    backdrop-filter: blur(16px);
+    border: 1px solid var(--border-glass);
+    border-radius: 24px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
+}
+
+.calendar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--border-glass);
+    padding-bottom: 12px;
+}
+
+.calendar-nav-btn {
+    background: none;
+    border: 1px solid var(--border-glass);
+    color: var(--text-primary);
+    padding: 6px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: var(--transition-smooth);
+}
+
+.calendar-nav-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: var(--accent-cyan);
+}
+
+.calendar-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+}
+
+.calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 8px;
+    text-align: center;
+}
+
+.calendar-weekday {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--text-secondary);
+    padding: 4px 0;
+    text-transform: uppercase;
+}
+
+.calendar-day {
+    aspect-ratio: 1;
+    min-height: 48px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 6px;
+    border-radius: 12px;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: var(--transition-smooth);
+    position: relative;
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.calendar-day:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: var(--border-active);
+}
+
+.calendar-day.today {
+    background: rgba(0, 242, 254, 0.1);
+    border-color: var(--accent-cyan);
+}
+
+.calendar-day.selected {
+    border-color: var(--accent-purple);
+    box-shadow: 0 0 12px rgba(115, 103, 240, 0.4);
+}
+
+.calendar-day.other-month {
+    opacity: 0.3;
+    cursor: default;
+}
+
+.calendar-day-num {
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.calendar-day-indicators {
+    display: flex;
+    justify-content: center;
+    gap: 2px;
+    flex-wrap: wrap;
+    margin-top: auto;
+    width: 100%;
+}
+
+.calendar-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+}
+
+.calendar-visits-list {
+    margin-top: 16px;
+    border-top: 1px solid var(--border-glass);
+    padding-top: 16px;
+}
+
+.calendar-visit-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    background: rgba(255,255,255,0.03);
+    border-radius: 12px;
+    border: 1px solid var(--border-glass);
+    margin-bottom: 8px;
+    cursor: pointer;
+    transition: var(--transition-smooth);
+}
+
+.calendar-visit-item:hover {
+    transform: translateX(4px);
+    border-color: var(--accent-cyan);
+}
+

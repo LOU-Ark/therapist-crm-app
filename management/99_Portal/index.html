@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>セラピスト向け顧客管理アプリ - Project Portal</title>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --theme-blend: 0%; /* 0% is Dark, 100% is Light */
+            --bg-dark: color-mix(in srgb, #f8fafc var(--theme-blend), #0f172a);
+            --card-bg: color-mix(in srgb, rgba(255, 255, 255, 0.8) var(--theme-blend), rgba(30, 41, 59, 0.7));
+            --text-main: color-mix(in srgb, #0f172a var(--theme-blend), #f1f5f9);
+            --text-dim: color-mix(in srgb, #475569 var(--theme-blend), #94a3b8);
+            --glass-border: color-mix(in srgb, rgba(15, 23, 42, 0.1) var(--theme-blend), rgba(255, 255, 255, 0.1));
+            
+            --accent-primary: #00f2fe;
+            --accent-secondary: #7367f0;
+        }
+
+        body {
+            font-family: 'Inter', 'Noto Sans JP', sans-serif;
+            background: var(--bg-dark);
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(0, 242, 254, 0.15) 0, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(115, 103, 240, 0.15) 0, transparent 50%);
+            color: var(--text-main);
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 60px 20px;
+        }
+
+        .header { text-align: center; margin-bottom: 60px; }
+        .header h1 {
+            font-size: 3rem; font-weight: 700; margin: 0;
+            background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+
+        .grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 24px; width: 100%; max-width: 1000px;
+        }
+
+        .card {
+            background: var(--card-bg); backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border); border-radius: 24px;
+            padding: 32px; transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            text-decoration: none; color: inherit; display: flex; flex-direction: column;
+            position: relative; overflow: hidden;
+        }
+
+        .card:hover { transform: translateY(-10px); border-color: var(--accent-primary); }
+
+        .demo-badge {
+            display: inline-block; width: 8px; height: 8px; background: #ff4b2b;
+            border-radius: 50%; box-shadow: 0 0 10px #ff4b2b;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255, 75, 43, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(255, 75, 43, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255, 75, 43, 0); }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <h1>セラピスト向け顧客管理アプリ</h1>
+        <p>Project Portal Hub <span style="background: var(--accent-secondary); color: #fff; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: bold; margin-left: 8px;">v1.5.6</span></p>
+        <div style="margin-top: 20px; display: inline-flex; align-items: center; gap: 10px; background: var(--card-bg); padding: 8px 16px; border-radius: 20px; border: 1px solid var(--glass-border); backdrop-filter: blur(10px);">
+            <span style="font-size: 0.85rem; color: var(--text-dim);">🌙 Dark</span>
+            <input type="range" id="theme-slider" min="0" max="100" value="0" style="width: 120px; accent-color: var(--accent-primary); cursor: pointer;" title="テーマ輝度ブレンド">
+            <span style="font-size: 0.85rem; color: var(--text-dim);">☀️ Light</span>
+        </div>
+    </header>
+
+    <script>
+        const themeSlider = document.getElementById('theme-slider');
+        const root = document.documentElement;
+
+        const savedBlend = localStorage.getItem('theme-blend') || '0';
+        themeSlider.value = savedBlend;
+        root.style.setProperty('--theme-blend', savedBlend + '%');
+
+        themeSlider.addEventListener('input', (e) => {
+            const val = e.target.value;
+            root.style.setProperty('--theme-blend', val + '%');
+            localStorage.setItem('theme-blend', val);
+        });
+    </script>
+
+    <main class="grid">
+        <!-- LIVE DEMO CARD (Standardized) -->
+        <a href="../../product/index.html" target="_blank" class="card" style="grid-column: 1 / -1; border-color: var(--accent-primary); background: linear-gradient(135deg, rgba(0, 242, 254, 0.1) 0%, rgba(30, 41, 59, 0.7) 100%);">
+            <div style="font-size: 0.7rem; font-weight: 700; letter-spacing: 2px; color: var(--accent-primary); margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                <span class="demo-badge"></span> LIVE DEMO
+            </div>
+            <div style="font-size: 1.5rem; font-weight: 600; margin-bottom: 8px;">プロダクトを試す</div>
+            <div style="font-size: 0.95rem; color: var(--text-dim); line-height: 1.6;">最新の実装状態を直接操作して確認できます。</div>
+        </a>
+
+        <!-- Milestone Cards (Supports multiple links for history tracking) -->
+        <a href="viewer.html?doc=../01_Requirements/01_Requirements.md" class="card">
+            <div style="font-size: 0.7rem; font-weight: 700; letter-spacing: 2px; color: var(--accent-primary); margin-bottom: 12px;">MILESTONE 01</div>
+            <div style="font-size: 1.5rem; font-weight: 600; margin-bottom: 8px;">要件定義</div>
+            <div style="font-size: 0.95rem; color: var(--text-dim); line-height: 1.6;">プロジェクトの要求・要件定義書。</div>
+        </a>
+
+        <a href="viewer.html?doc=../02_Planning/02_Planning.md" class="card">
+            <div style="font-size: 0.7rem; font-weight: 700; letter-spacing: 2px; color: var(--accent-primary); margin-bottom: 12px;">MILESTONE 02</div>
+            <div style="font-size: 1.5rem; font-weight: 600; margin-bottom: 8px;">作業計画 (WBS)</div>
+            <div style="font-size: 0.95rem; color: var(--text-dim); line-height: 1.6;">Mermaid ガントチャート付きの作業計画書。</div>
+        </a>
+
+        <a href="viewer.html?doc=../03_Implementation/REPORT-CRM-APP.md" class="card">
+            <div style="font-size: 0.7rem; font-weight: 700; letter-spacing: 2px; color: var(--accent-primary); margin-bottom: 12px;">MILESTONE 03</div>
+            <div style="font-size: 1.5rem; font-weight: 600; margin-bottom: 8px;">実装報告書</div>
+            <div style="font-size: 0.95rem; color: var(--text-dim); line-height: 1.6;">実装の構成・検証結果に関する報告書。</div>
+        </a>
+
+        <!-- 改善履歴 (Changelog Section) -->
+        <div class="card" style="grid-column: 1 / -1; background: rgba(255,255,255,0.02);">
+            <div style="font-size: 0.7rem; font-weight: 700; letter-spacing: 2px; color: var(--accent-secondary); margin-bottom: 12px;">HISTORY & BUG FIXES</div>
+            <div style="font-size: 1.3rem; font-weight: 600; margin-bottom: 16px;">ポータル改善履歴</div>
+            
+            <details class="issue-card" open style="background: rgba(0,0,0,0.2); padding: 16px; border-radius: 12px; border: 1px solid var(--glass-border); text-align: left; margin-bottom: 12px;">
+                <summary style="font-weight: 600; cursor: pointer; color: var(--accent-primary);">v1.5.6 - 同一日予約時の複数ソウルカラードット表示検証データの追加 (ISSUE-012)</summary>
+                <div style="margin-top: 12px; font-size: 0.9rem; color: var(--text-dim); line-height: 1.6;">
+                    <p style="margin: 0 0 8px 0;">1つの日付マスに2つのソウルカラードット（紫・金）が同時に並んで描画される動作を検証できるよう、7月10日に佐藤健太さんのテスト施術記録を自動追加するデータベースマイグレーション処理を実装しました。</p>
+                    <a href="viewer.html?doc=../03_Implementation/REPORT-ISSUE-012.md" style="display: inline-flex; text-decoration: none; padding: 6px 12px; font-size: 0.8rem; border-radius: 8px; margin-top: 8px; background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary)); color: #fff; font-weight: bold; border: none;">📖 詳細レポートを開く →</a>
+                </div>
+            </details>
+
+            <details class="issue-card" style="background: rgba(0,0,0,0.2); padding: 16px; border-radius: 12px; border: 1px solid var(--glass-border); text-align: left; margin-bottom: 12px;">
+                <summary style="font-weight: 600; cursor: pointer; color: var(--accent-primary);">v1.5.5 - ローカルデータベース内の初期顧客ソウルカラー復元 (ISSUE-011)</summary>
+                <div style="margin-top: 12px; font-size: 0.9rem; color: var(--text-dim); line-height: 1.6;">
+                    <p style="margin: 0 0 8px 0;">初期導入のマイグレーション処理において、一部顧客のソウルカラーが「clear（グレー）」に固定されてしまっていた問題を解決するため、ロード時にデフォルトのデモ顧客（山田花子：バイオレット、佐藤健太：ゴールド）に対してソウルカラーを正しく再割り当てして永続化するマイグレーションロジックを実装しました。</p>
+                    <a href="viewer.html?doc=../03_Implementation/REPORT-ISSUE-011.md" style="display: inline-flex; text-decoration: none; padding: 6px 12px; font-size: 0.8rem; border-radius: 8px; margin-top: 8px; background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary)); color: #fff; font-weight: bold; border: none;">📖 詳細レポートを開く →</a>
+                </div>
+            </details>
+
+            <details class="issue-card" style="background: rgba(0,0,0,0.2); padding: 16px; border-radius: 12px; border: 1px solid var(--glass-border); text-align: left; margin-bottom: 12px;">
+                <summary style="font-weight: 600; cursor: pointer; color: var(--accent-primary);">v1.5.4 - CSS優先順位競合による顧客一覧カードグリッド崩れの修正 (ISSUE-010)</summary>
+                <div style="margin-top: 12px; font-size: 0.9rem; color: var(--text-dim); line-height: 1.6;">
+                    <p style="margin: 0 0 8px 0;">index.cssの291行目付近に記述されていた古い「.customer-list（flex縦積み）」定義が、新規のグリッド定義を後方互換で上書きしてしまっていた問題を解決するため、古いフレックス重複定義を削除しました。これにより顧客カードの四角いグリッド表示が正しく全画面幅に適用されます。</p>
+                    <a href="viewer.html?doc=../03_Implementation/REPORT-ISSUE-010.md" style="display: inline-flex; text-decoration: none; padding: 6px 12px; font-size: 0.8rem; border-radius: 8px; margin-top: 8px; background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary)); color: #fff; font-weight: bold; border: none;">📖 詳細レポートを開く →</a>
+                </div>
+            </details>
+
+            <details class="issue-card" style="background: rgba(0,0,0,0.2); padding: 16px; border-radius: 12px; border: 1px solid var(--glass-border); text-align: left; margin-bottom: 12px;">
+                <summary style="font-weight: 600; cursor: pointer; color: var(--accent-primary);">v1.5.3 - 顧客一覧カードの四角形グリッドカードデザインへの差し戻し (ISSUE-009)</summary>
+                <div style="margin-top: 12px; font-size: 0.9rem; color: var(--text-dim); line-height: 1.6;">
+                    <p style="margin: 0 0 8px 0;">顧客一覧のカード表示が前回の変更で意図せず横長リストに戻ってしまっていたため、ユーザー様のご要望に沿って、元々ご評価いただいていた美しい「四角いカードグリッド」の形状・HTML構成（v1.5.0設計）へ完全に差し戻しました。</p>
+                    <a href="viewer.html?doc=../03_Implementation/REPORT-ISSUE-009.md" style="display: inline-flex; text-decoration: none; padding: 6px 12px; font-size: 0.8rem; border-radius: 8px; margin-top: 8px; background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary)); color: #fff; font-weight: bold; border: none;">📖 詳細レポートを開く →</a>
+                </div>
+            </details>
+
+            <details class="issue-card" style="background: rgba(0,0,0,0.2); padding: 16px; border-radius: 12px; border: 1px solid var(--glass-border); text-align: left; margin-bottom: 12px;">
+                <summary style="font-weight: 600; cursor: pointer; color: var(--accent-primary);">v1.5.2 - 顧客カード内のモックアップ準拠（丸ドット・横並びテキスト）デザイン修正 (ISSUE-008)</summary>
+                <div style="margin-top: 12px; font-size: 0.9rem; color: var(--text-dim); line-height: 1.6;">
+                    <p style="margin: 0 0 8px 0;">顧客一覧グリッドの各カード内のレイアウトがモックアップ画像とズレていた問題を解消するため、左端のソウルカラー点、中央のお名前・かな・来店回数テキスト、右端の遷移矢印という構成を復元しました。カード自体のフレックス仕様を再調整し、より一貫性の高い美しいUIになりました。</p>
+                    <a href="viewer.html?doc=../03_Implementation/REPORT-ISSUE-008.md" style="display: inline-flex; text-decoration: none; padding: 6px 12px; font-size: 0.8rem; border-radius: 8px; margin-top: 8px; background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary)); color: #fff; font-weight: bold; border: none;">📖 詳細レポートを開く →</a>
+                </div>
+            </details>
+
+            <details class="issue-card" style="background: rgba(0,0,0,0.2); padding: 16px; border-radius: 12px; border: 1px solid var(--glass-border); text-align: left; margin-bottom: 12px;">
+                <summary style="font-weight: 600; cursor: pointer; color: var(--accent-primary);">v1.5.1 - カレンダー表示時の顧客カード（グリッド）混入バグの修正 (ISSUE-007)</summary>
+                <div style="margin-top: 12px; font-size: 0.9rem; color: var(--text-dim); line-height: 1.6;">
+                    <p style="margin: 0 0 8px 0;">カレンダータブ選択時に、CSS側の「!important」指定の干渉により顧客カード一覧が画面に残ってしまうバグを、CSS特異性を整理することで修正しました。カレンダー表示中には顧客カードが正しく非表示になります。</p>
+                    <a href="viewer.html?doc=../03_Implementation/REPORT-ISSUE-007.md" style="display: inline-flex; text-decoration: none; padding: 6px 12px; font-size: 0.8rem; border-radius: 8px; margin-top: 8px; background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary)); color: #fff; font-weight: bold; border: none;">📖 詳細レポートを開く →</a>
+                </div>
+            </details>
+
+            <details class="issue-card" style="background: rgba(0,0,0,0.2); padding: 16px; border-radius: 12px; border: 1px solid var(--glass-border); text-align: left; margin-bottom: 12px;">
+                <summary style="font-weight: 600; cursor: pointer; color: var(--accent-primary);">v1.5.0 - 顧客一覧の四角いカードグリッド化と全画面カルテ記述モードの導入 (ISSUE-006)</summary>
+                <div style="margin-top: 12px; font-size: 0.9rem; color: var(--text-dim); line-height: 1.6;">
+                    <p style="margin: 0 0 8px 0;">顧客一覧を一連の縦リストから、画面幅いっぱいにタイル状に並ぶソウルカラー別の四角形カードグリッドへとデザイン刷新しました。また、カードクリック時にはカルテ詳細が全画面幅で開き、情報の記入や編集に集中できる専有ワークスペース遷移（detail-mode）を実装しました。</p>
+                    <a href="viewer.html?doc=../03_Implementation/REPORT-ISSUE-006.md" style="display: inline-flex; text-decoration: none; padding: 6px 12px; font-size: 0.8rem; border-radius: 8px; margin-top: 8px; background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary)); color: #fff; font-weight: bold; border: none;">📖 詳細レポートを開く →</a>
+                </div>
+            </details>
+
+            <details class="issue-card" style="background: rgba(0,0,0,0.2); padding: 16px; border-radius: 12px; border: 1px solid var(--glass-border); text-align: left; margin-bottom: 12px;">
+                <summary style="font-weight: 600; cursor: pointer; color: var(--accent-primary);">v1.4.1 - カレンダーの全画面表示化とセル内ソウルカラー表示への調整 (ISSUE-005)</summary>
+                <div style="margin-top: 12px; font-size: 0.9rem; color: var(--text-dim); line-height: 1.6;">
+                    <p style="margin: 0 0 8px 0;">カレンダー選択時に自動で2カラムレイアウトから全画面（1カラム）へ拡張し、横幅いっぱいの表示サイズを確保するよう制御を追加しました。また、日付セル内の表示をソウルカラー（インジケータードット）のみへ差し戻し、クリック時に日付下部にレコード詳細を表示する仕様へ再調整しました。</p>
+                    <a href="viewer.html?doc=../03_Implementation/REPORT-ISSUE-005.md" style="display: inline-flex; text-decoration: none; padding: 6px 12px; font-size: 0.8rem; border-radius: 8px; margin-top: 8px; background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary)); color: #fff; font-weight: bold; border: none;">📖 詳細レポートを開く →</a>
+                </div>
+            </details>
+
+            <details class="issue-card" style="background: rgba(0,0,0,0.2); padding: 16px; border-radius: 12px; border: 1px solid var(--glass-border); text-align: left; margin-bottom: 12px;">
+                <summary style="font-weight: 600; cursor: pointer; color: var(--accent-primary);">v1.4.0 - 大画面での2カラムレイアウト化とカレンダー名札表示の追加 (ISSUE-004)</summary>
+                <div style="margin-top: 12px; font-size: 0.9rem; color: var(--text-dim); line-height: 1.6;">
+                    <p style="margin: 0 0 8px 0;">アプリ全体の横幅を 1200px へ拡張し、デスクトップ環境等の大画面で顧客一覧/カレンダーと詳細カードを左右2カラムで並行表示できるようにレイアウトを再設計しました。また、カレンダー内の各セルに顧客の名前をソウルカラー背景のバッジとして直接描画し、視認性を飛躍的に高めました。</p>
+                    <a href="viewer.html?doc=../03_Implementation/REPORT-ISSUE-004.md" style="display: inline-flex; text-decoration: none; padding: 6px 12px; font-size: 0.8rem; border-radius: 8px; margin-top: 8px; background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary)); color: #fff; font-weight: bold; border: none;">📖 詳細レポートを開く →</a>
+                </div>
+            </details>
+
+            <details class="issue-card" style="background: rgba(0,0,0,0.2); padding: 16px; border-radius: 12px; border: 1px solid var(--glass-border); text-align: left; margin-bottom: 12px;">
+                <summary style="font-weight: 600; cursor: pointer; color: var(--accent-primary);">v1.3.0 - カレンダー上での施術・記録管理機能の追加 (ISSUE-003)</summary>
+                <div style="margin-top: 12px; font-size: 0.9rem; color: var(--text-dim); line-height: 1.6;">
+                    <p style="margin: 0 0 8px 0;">月間カレンダー表示を実装し、日別の来店状況をソウルカラーのドットでプレビューできるようにしました。カレンダーの日付を起点とした直接の新規登録や、レコードクリックによる顧客詳細へのスムーズな遷移を実現しました。</p>
+                    <a href="viewer.html?doc=../03_Implementation/REPORT-ISSUE-003.md" style="display: inline-flex; text-decoration: none; padding: 6px 12px; font-size: 0.8rem; border-radius: 8px; margin-top: 8px; background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary)); color: #fff; font-weight: bold; border: none;">📖 詳細レポートを開く →</a>
+                </div>
+            </details>
+
+            <details class="issue-card" style="background: rgba(0,0,0,0.2); padding: 16px; border-radius: 12px; border: 1px solid var(--glass-border); text-align: left; margin-bottom: 12px;">
+                <summary style="font-weight: 600; cursor: pointer; color: var(--accent-primary);">v1.2.0 - アプリへのテーマ調整スライダー追加 (ISSUE-002)</summary>
+                <div style="margin-top: 12px; font-size: 0.9rem; color: var(--text-dim); line-height: 1.6;">
+                    <p style="margin: 0 0 8px 0;">アプリヘッダーにインラインのテーマ調整スライダーを追加し、ゲートウェイやポータルと同様にダーク／ライトの配色をリアルタイム変更できるように拡張しました。</p>
+                    <a href="viewer.html?doc=../03_Implementation/REPORT-ISSUE-002.md" style="display: inline-flex; text-decoration: none; padding: 6px 12px; font-size: 0.8rem; border-radius: 8px; margin-top: 8px; background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary)); color: #fff; font-weight: bold; border: none;">📖 詳細レポートを開く →</a>
+                </div>
+            </details>
+
+            <details class="issue-card" style="background: rgba(0,0,0,0.2); padding: 16px; border-radius: 12px; border: 1px solid var(--glass-border); text-align: left;">
+                <summary style="font-weight: 600; cursor: pointer; color: var(--accent-primary);">v1.1.1 - 起動時ロードエラーの修正 (ISSUE-001)</summary>
+                <div style="margin-top: 12px; font-size: 0.9rem; color: var(--text-dim); line-height: 1.6;">
+                    <p style="margin: 0 0 8px 0;">一部環境における古いLocalStorageデータのマイグレーション失敗、およびDOM要素未検出エラーによる読み込み時クラッシュを修正し、起動の堅牢性を大幅に高めました。</p>
+                    <a href="viewer.html?doc=../03_Implementation/REPORT-ISSUE-001.md" style="display: inline-flex; text-decoration: none; padding: 6px 12px; font-size: 0.8rem; border-radius: 8px; margin-top: 8px; background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary)); color: #fff; font-weight: bold; border: none;">📖 詳細レポートを開く →</a>
+                </div>
+            </details>
+        </div>
+    </main>
+
+    <!-- Aurora Dialogue Integration -->
+    <script type="module">
+        import { initAuroraChat } from '../../.agent/templates/floating-chat/integrations/entry-aurora.js';
+        initAuroraChat();
+    </script>
+</body>
+</html>

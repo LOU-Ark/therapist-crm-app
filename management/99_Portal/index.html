@@ -72,7 +72,7 @@
 <body>
     <header class="header">
         <h1>セラピスト向け顧客管理アプリ</h1>
-        <p>Project Portal Hub <span style="background: var(--accent-secondary); color: #fff; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: bold; margin-left: 8px;">v1.5.6</span></p>
+        <p>Project Portal Hub <span style="background: var(--accent-secondary); color: #fff; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: bold; margin-left: 8px;">v1.5.9</span></p>
         <div style="margin-top: 20px; display: inline-flex; align-items: center; gap: 10px; background: var(--card-bg); padding: 8px 16px; border-radius: 20px; border: 1px solid var(--glass-border); backdrop-filter: blur(10px);">
             <span style="font-size: 0.85rem; color: var(--text-dim);">🌙 Dark</span>
             <input type="range" id="theme-slider" min="0" max="100" value="0" style="width: 120px; accent-color: var(--accent-primary); cursor: pointer;" title="テーマ輝度ブレンド">
@@ -130,6 +130,38 @@
             <div style="font-size: 1.3rem; font-weight: 600; margin-bottom: 16px;">ポータル改善履歴</div>
             
             <details class="issue-card" open style="background: rgba(0,0,0,0.2); padding: 16px; border-radius: 12px; border: 1px solid var(--glass-border); text-align: left; margin-bottom: 12px;">
+                <summary style="font-weight: 600; cursor: pointer; color: var(--accent-primary);">[CHORE] v1.5.9 - Vercelデプロイ対象をアプリ単体に限定・トップページ化 (ISSUE-016)</summary>
+                <div style="margin-top: 12px; font-size: 0.9rem; color: var(--text-dim); line-height: 1.6;">
+                    <p style="margin: 0 0 8px 0;">Vercelの配信対象を <code>product/</code>（顧客管理アプリ）のみに限定し、顧客一覧画面がトップページ（<code>/</code>）に来るよう設定を変更しました。<code>.vercelignore</code> で管理ポータル・開発用ランチパッド・ブリッジサーバを除外し、<code>vercel.json</code> に <code>outputDirectory: "product"</code> を追加しています。あわせて、本番では404となっていたフローティングチャット（<code>.agent/</code> 配下を参照＝Git管理外）を <code>product/js/vendor/</code> へ同梱し、アプリを自己完結させました。<strong>設定変更のためバージョンは v1.5.9 据え置きです。</strong>管理ポータルは今後ローカルでのみ閲覧します。</p>
+                    <a href="viewer.html?doc=../03_Implementation/REPORT-ISSUE-016.md" style="display: inline-flex; text-decoration: none; padding: 6px 12px; font-size: 0.8rem; border-radius: 8px; margin-top: 8px; background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary)); color: #fff; font-weight: bold; border: none;">📖 詳細レポートを開く →</a>
+                </div>
+            </details>
+
+            <details class="issue-card" style="background: rgba(0,0,0,0.2); padding: 16px; border-radius: 12px; border: 1px solid var(--glass-border); text-align: left; margin-bottom: 12px;">
+                <summary style="font-weight: 600; cursor: pointer; color: var(--accent-primary);">v1.5.9 - インラインスタイルによる顧客カードグリッド崩れの修正 (ISSUE-015)</summary>
+                <div style="margin-top: 12px; font-size: 0.9rem; color: var(--text-dim); line-height: 1.6;">
+                    <p style="margin: 0 0 8px 0;">カレンダーから顧客一覧へ戻ると、カードがタイル状グリッドではなく全幅の縦積みリストに崩れていました。JS が表示制御のために <code>style.display = 'block'</code> をインライン付与しており、CSS の <code>.customer-list { display: grid }</code> を優先度で上書きしていたことが原因です。<code>style.display = ''</code>（インライン指定の除去）に変更し、CSS本来のグリッドへ復帰させました。<strong>キャッシュではなくインラインスタイルの残留</strong>が「リロードで直る」挙動を生んでいました。</p>
+                    <a href="viewer.html?doc=../03_Implementation/REPORT-ISSUE-015.md" style="display: inline-flex; text-decoration: none; padding: 6px 12px; font-size: 0.8rem; border-radius: 8px; margin-top: 8px; background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary)); color: #fff; font-weight: bold; border: none;">📖 詳細レポートを開く →</a>
+                </div>
+            </details>
+
+            <details class="issue-card" style="background: rgba(0,0,0,0.2); padding: 16px; border-radius: 12px; border: 1px solid var(--glass-border); text-align: left; margin-bottom: 12px;">
+                <summary style="font-weight: 600; cursor: pointer; color: var(--accent-primary);">v1.5.8 - カレンダーから顧客一覧へ戻ると画面が空白になるバグの修正 (ISSUE-014)</summary>
+                <div style="margin-top: 12px; font-size: 0.9rem; color: var(--text-dim); line-height: 1.6;">
+                    <p style="margin: 0 0 8px 0;">カルテを開いた後にカレンダー経由で顧客一覧へ戻ると、<code>.workspace-grid</code> に <code>detail-mode</code> クラスが残留し、一覧カラムが <code>display: none</code> のまま・カルテ側も非表示という状態になり画面全体が空白になっていました。ビュー切り替え時に <code>detail-mode</code> と <code>calendar-mode</code> を明示的に排他管理するよう修正しました。</p>
+                    <a href="viewer.html?doc=../03_Implementation/REPORT-ISSUE-014.md" style="display: inline-flex; text-decoration: none; padding: 6px 12px; font-size: 0.8rem; border-radius: 8px; margin-top: 8px; background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary)); color: #fff; font-weight: bold; border: none;">📖 詳細レポートを開く →</a>
+                </div>
+            </details>
+
+            <details class="issue-card" style="background: rgba(0,0,0,0.2); padding: 16px; border-radius: 12px; border: 1px solid var(--glass-border); text-align: left; margin-bottom: 12px;">
+                <summary style="font-weight: 600; cursor: pointer; color: var(--accent-primary);">v1.5.7 - カレンダーから顧客カルテへの遷移が機能しないバグの修正 (ISSUE-013)</summary>
+                <div style="margin-top: 12px; font-size: 0.9rem; color: var(--text-dim); line-height: 1.6;">
+                    <p style="margin: 0 0 8px 0;">カレンダービューで施術記録をクリックした際、workspaceGrid に残留していた <code>.calendar-mode</code> クラスが CSS の <code>display: none !important</code> ルールを起動し、カルテ詳細パネルを強制非表示にしていました。遷移ハンドラに1行追加してクラスを解除することで修正しました。</p>
+                    <a href="viewer.html?doc=../03_Implementation/REPORT-ISSUE-013.md" style="display: inline-flex; text-decoration: none; padding: 6px 12px; font-size: 0.8rem; border-radius: 8px; margin-top: 8px; background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary)); color: #fff; font-weight: bold; border: none;">📖 詳細レポートを開く →</a>
+                </div>
+            </details>
+
+            <details class="issue-card" style="background: rgba(0,0,0,0.2); padding: 16px; border-radius: 12px; border: 1px solid var(--glass-border); text-align: left; margin-bottom: 12px;">
                 <summary style="font-weight: 600; cursor: pointer; color: var(--accent-primary);">v1.5.6 - 同一日予約時の複数ソウルカラードット表示検証データの追加 (ISSUE-012)</summary>
                 <div style="margin-top: 12px; font-size: 0.9rem; color: var(--text-dim); line-height: 1.6;">
                     <p style="margin: 0 0 8px 0;">1つの日付マスに2つのソウルカラードット（紫・金）が同時に並んで描画される動作を検証できるよう、7月10日に佐藤健太さんのテスト施術記録を自動追加するデータベースマイグレーション処理を実装しました。</p>

@@ -2,8 +2,11 @@
 
 import { getCustomers, addCustomer, addRecord, updateCustomer } from './data.js';
 
-// DOMの読込完了時に起動
-document.addEventListener('DOMContentLoaded', () => {
+// -------------------------------------------------------------------
+// メイン初期化関数
+// DOMContentLoaded だけでなく pageshow（bfcache復帰）からも呼び出す
+// -------------------------------------------------------------------
+function initApp() {
     // DOM要素の取得
     const searchInput = document.getElementById('search-input');
     const btnAddCustomer = document.getElementById('btn-add-customer');
@@ -552,9 +555,23 @@ document.addEventListener('DOMContentLoaded', () => {
             btnViewCalendar.style.fontWeight = '500';
 
             if (searchContainerSection) searchContainerSection.style.display = 'flex';
-            if (customerListContainer) customerListContainer.style.display = 'block';
+            // [BUGFIX ISSUE-015] 'block' を入れると .customer-list { display: grid } を
+            // インラインで上書きしてしまい、カードが縦積みの全幅リストに崩れる。
+            // 空文字を代入してインライン指定を除去し、CSS本来のグリッドに戻す。
+            if (customerListContainer) customerListContainer.style.display = '';
             if (calendarViewContainer) calendarViewContainer.style.display = 'none';
-            if (workspaceGrid) workspaceGrid.classList.remove('calendar-mode');
+
+            // [BUGFIX ISSUE-014] calendar-mode だけでなく detail-mode も必ず解除する。
+            // detail-mode が残ると .workspace-grid.detail-mode .workspace-column-left が
+            // display:none となり、一覧側（検索＋カード）が丸ごと消えて画面が空白になる。
+            if (workspaceGrid) {
+                workspaceGrid.classList.remove('calendar-mode');
+                workspaceGrid.classList.remove('detail-mode');
+            }
+            if (customerDetailView) customerDetailView.style.display = 'none';
+            selectedCustomerId = null;
+
+            renderCustomerList(searchInput ? searchInput.value : '');
         });
 
         btnViewCalendar.addEventListener('click', () => {
@@ -569,7 +586,13 @@ document.addEventListener('DOMContentLoaded', () => {
             if (customerListContainer) customerListContainer.style.display = 'none';
             if (calendarViewContainer) calendarViewContainer.style.display = 'flex';
             if (customerDetailView) customerDetailView.style.display = 'none';
-            if (workspaceGrid) workspaceGrid.classList.add('calendar-mode');
+
+            // [BUGFIX ISSUE-014] カレンダーへ切り替える際も detail-mode を確実に解除しておく。
+            // （CSS記述順に依存した打ち消しに頼らず、状態クラスを明示的に排他にする）
+            if (workspaceGrid) {
+                workspaceGrid.classList.remove('detail-mode');
+                workspaceGrid.classList.add('calendar-mode');
+            }
 
             renderCalendar();
         });
@@ -705,8 +728,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 item.addEventListener('click', () => {
                     if (searchContainerSection) searchContainerSection.style.display = 'flex';
-                    if (customerListContainer) customerListContainer.style.display = 'block';
+                    // [BUGFIX ISSUE-015] CSS の display:grid をインラインで潰さないよう空文字を代入
+                    if (customerListContainer) customerListContainer.style.display = '';
                     if (calendarViewContainer) calendarViewContainer.style.display = 'none';
+
+                    // [BUGFIX ISSUE-013] calendar-mode クラスを削除しないと、
+                    // .workspace-grid.calendar-mode .workspace-column-right { display: none !important; }
+                    // というCSSルールがカルテ詳細パネルを強制非表示にしてしまうため、ここで必ず解除する
+                    if (workspaceGrid) workspaceGrid.classList.remove('calendar-mode');
 
                     if (btnViewList && btnViewCalendar) {
                         btnViewList.style.background = 'var(--accent-cyan)';
@@ -749,5 +778,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 初回読み込み
     renderCustomerList();
-});
+} // initApp end
 
+// -------------------------------------------------------------------
+// エントリポイント：初回表示 + bfcache / 別ページ遷移からの復帰に対応
+// -------------------------------------------------------------------
+
+// 既にDOMが構築済みの場合（bfcache等）は即時実行
+if (document.readyState === 'loading') {
+    // まだパース中なら DOMContentLoaded を待つ
+    document.addEventListener('DOMContentLoaded', initApp);
+} else {
+    // interactive / complete ならそのまま起動
+    initApp();
+}
+
+// bfcache（前後ナビゲーション）で復帰した際にも再描画する
+window.addEventListener('pageshow', (event) => {
+    // persisted === true はbfcacheからの復帰を意味する
+    if (event.persisted) {
+        initApp();
+    }
+});

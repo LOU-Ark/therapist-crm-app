@@ -1,6 +1,78 @@
 // セラピスト向け顧客管理アプリ：UI・DOM操作制御モジュール
 
-import { getCustomers, addCustomer, addRecord, updateCustomer } from './data.js';
+import {
+    getCustomers, addCustomer, addRecord, updateCustomer,
+    getSoulColors, getMainSoulColor, MAX_SOUL_COLORS, SOUL_COLOR_DEFS
+} from './data.js';
+
+// -------------------------------------------------------------------
+// [ISSUE-018] Soul Color（最大5色）共通ヘルパー
+// -------------------------------------------------------------------
+
+/** 13色のカラーチップHTMLを生成する（選択UI用） */
+function buildColorChipsHtml() {
+    return SOUL_COLOR_DEFS
+        .map(c => `<span class="color-chip ${c.key}" data-color="${c.key}" title="${c.label}"></span>`)
+        .join('');
+}
+
+/**
+ * 選択済みカラーを「上段3色・下段2色」で表示するHTMLを生成する。
+ * 色が5色未満のときは、その分だけ詰めて表示する。
+ */
+function buildSoulColorBadgeHtml(colors, size = 'md') {
+    const list = (colors || []).slice(0, MAX_SOUL_COLORS);
+    if (list.length === 0) return '';
+    const top = list.slice(0, 3);
+    const bottom = list.slice(3, 5);
+    const dots = arr => arr.map(c => `<span class="soul-dot bg-${c}"></span>`).join('');
+    return `
+        <span class="soul-color-badge ${size === 'sm' ? 'sm' : ''}">
+            <span class="soul-color-badge-row">${dots(top)}</span>
+            ${bottom.length ? `<span class="soul-color-badge-row">${dots(bottom)}</span>` : ''}
+        </span>
+    `;
+}
+
+/**
+ * カラーチップ群を「最大5色まで選択できるセレクター」として初期化する。
+ * 選択順が保持され、チップには順番バッジ（1〜5）が表示される。
+ * @returns {() => string[]} 現在の選択色を返すゲッター
+ */
+function initSoulColorSelector(container, initialColors, onChange) {
+    let selected = (initialColors || []).slice(0, MAX_SOUL_COLORS);
+    const chips = container.querySelectorAll('.color-chip');
+
+    const render = () => {
+        chips.forEach(chip => {
+            const key = chip.getAttribute('data-color');
+            const order = selected.indexOf(key);
+            chip.classList.toggle('active', order !== -1);
+            chip.setAttribute('data-order', order === -1 ? '' : String(order + 1));
+            // 上限到達時、未選択チップは選べないことを視覚的に示す
+            chip.classList.toggle('disabled', order === -1 && selected.length >= MAX_SOUL_COLORS);
+        });
+        if (onChange) onChange(selected.slice());
+    };
+
+    chips.forEach(chip => {
+        chip.addEventListener('click', () => {
+            const key = chip.getAttribute('data-color');
+            const order = selected.indexOf(key);
+            if (order !== -1) {
+                selected.splice(order, 1);          // 選択済みなら解除
+            } else if (selected.length < MAX_SOUL_COLORS) {
+                selected.push(key);                 // 未選択なら末尾に追加（順序を保持）
+            } else {
+                return;                             // 上限5色に達している場合は何もしない
+            }
+            render();
+        });
+    });
+
+    render();
+    return () => selected.slice();
+}
 
 // -------------------------------------------------------------------
 // メイン初期化関数
@@ -57,7 +129,8 @@ function initApp() {
 
         filtered.forEach(customer => {
             const card = document.createElement('div');
-            card.className = `customer-card-grid-item soul-card-${customer.soulColor || 'clear'}`;
+            // [ISSUE-018] カードの枠色・背景は1色目（メインカラー）を使う
+            card.className = `customer-card-grid-item soul-card-${getMainSoulColor(customer)}`;
             if (selectedCustomerId === customer.id) {
                 card.style.boxShadow = '0 0 16px var(--accent-cyan)';
             }
@@ -156,7 +229,9 @@ function initApp() {
                             </div>
                             <div class="history-item-body">
                                 <div style="font-weight: 600; margin-bottom: 4px;">${r.type}</div>
-                                ${r.prescription ? `<div style="font-size: 0.85rem; color: var(--text-secondary);">処方: ${r.prescription}</div>` : ''}
+                                ${r.clientComplaint ? `<div style="font-size: 0.85rem; margin-top: 4px;"><span style="color: var(--accent-warning); font-weight: 500;">訴え:</span> ${r.clientComplaint}</div>` : ''}
+                                ${r.prescription ? `<div style="font-size: 0.85rem; margin-top: 4px;"><span style="color: var(--accent-cyan); font-weight: 500;">処方:</span> ${r.prescription}</div>` : ''}
+                                ${r.therapistNote ? `<div style="font-size: 0.85rem; margin-top: 4px; font-style: italic; color: var(--text-secondary);"><span style="color: var(--accent-purple); font-weight: 500; font-style: normal;">メモ:</span> ${r.therapistNote}</div>` : ''}
                             </div>
                         `;
                         tabContentArea.appendChild(div);
@@ -185,12 +260,8 @@ function initApp() {
 
             case 'personal-info':
                 // 個人情報の一覧・詳細
-                const colorNames = {
-                    red: "レッド", coral: "コーラル", orange: "オレンジ", gold: "ゴールド",
-                    yellow: "イエロー", olive: "オリーブ", green: "グリーン", turquoise: "ターコイズ",
-                    blue: "ブルー", "royal-blue": "ロイヤルブルー", violet: "バイオレット",
-                    magenta: "マゼンタ", clear: "クリア"
-                };
+                // [ISSUE-018] 色名の定義は data.js の SOUL_COLOR_DEFS を正本とし、
+                // ここで重複定義していた colorNames は廃止した。
 
                 tabContentArea.innerHTML = `
                     <div style="display: flex; flex-direction: column; gap: 12px;">
@@ -215,22 +286,12 @@ function initApp() {
                             </div>
                         </div>
                         <div>
-                            <span style="font-size: 0.8rem; color: var(--text-secondary); display: block; margin-bottom: 4px;">Soul Color</span>
-                            <input type="hidden" id="edit-soul-color" value="${customer.soulColor || 'clear'}">
+                            <span style="font-size: 0.8rem; color: var(--text-secondary); display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                                Soul Color（最大${MAX_SOUL_COLORS}色・タップで選択／解除）
+                                <span class="soul-color-selected-preview" id="edit-soul-color-preview"></span>
+                            </span>
                             <div class="soul-color-selector" id="edit-soul-color-container">
-                                <span class="color-chip red" data-color="red" title="レッド"></span>
-                                <span class="color-chip coral" data-color="coral" title="コーラル"></span>
-                                <span class="color-chip orange" data-color="orange" title="オレンジ"></span>
-                                <span class="color-chip gold" data-color="gold" title="ゴールド"></span>
-                                <span class="color-chip yellow" data-color="yellow" title="イエロー"></span>
-                                <span class="color-chip olive" data-color="olive" title="オリーブ"></span>
-                                <span class="color-chip green" data-color="green" title="グリーン"></span>
-                                <span class="color-chip turquoise" data-color="turquoise" title="ターコイズ"></span>
-                                <span class="color-chip blue" data-color="blue" title="ブルー"></span>
-                                <span class="color-chip royal-blue" data-color="royal-blue" title="ロイヤルブルー"></span>
-                                <span class="color-chip violet" data-color="violet" title="バイオレット"></span>
-                                <span class="color-chip magenta" data-color="magenta" title="マゼンタ"></span>
-                                <span class="color-chip clear" data-color="clear" title="クリア"></span>
+                                ${buildColorChipsHtml()}
                             </div>
                         </div>
                         <div>
@@ -245,20 +306,19 @@ function initApp() {
                     </div>
                 `;
 
-                // ソウルカラーチップの初期選択状態設定
-                const editSoulColorInput = document.getElementById('edit-soul-color');
+                // [ISSUE-018] ソウルカラーを最大5色まで選択できるセレクターとして初期化。
+                // 選択内容は上段3色・下段2色のプレビューにリアルタイム反映する。
                 const editSoulColorContainer = document.getElementById('edit-soul-color-container');
-                const editChips = editSoulColorContainer.querySelectorAll('.color-chip');
-                editChips.forEach(chip => {
-                    if (chip.getAttribute('data-color') === editSoulColorInput.value) {
-                        chip.classList.add('active');
+                const editSoulColorPreview = document.getElementById('edit-soul-color-preview');
+                const getEditSoulColors = initSoulColorSelector(
+                    editSoulColorContainer,
+                    getSoulColors(customer),
+                    (colors) => {
+                        editSoulColorPreview.innerHTML = colors.length
+                            ? buildSoulColorBadgeHtml(colors, 'sm')
+                            : '<span style="font-size: 0.8rem; color: var(--text-secondary);">未設定</span>';
                     }
-                    chip.addEventListener('click', () => {
-                        editChips.forEach(c => c.classList.remove('active'));
-                        chip.classList.add('active');
-                        editSoulColorInput.value = chip.getAttribute('data-color');
-                    });
-                });
+                );
 
                 // テキストエリア自動リサイズ対応
                 const editMemoTextarea = document.getElementById('edit-memo-textarea');
@@ -282,7 +342,7 @@ function initApp() {
                         phone: document.getElementById('edit-phone').value,
                         birthday: document.getElementById('edit-birthday').value,
                         referrer: document.getElementById('edit-referrer').value,
-                        soulColor: editSoulColorInput.value,
+                        soulColors: getEditSoulColors(),
                         initialConsultation: editInitialConsultationTextarea.value,
                         memo: editMemoTextarea.value
                     };
@@ -305,18 +365,32 @@ function initApp() {
 
     // 4. 各種イベント処理
 
-    // 新規登録のカラーセレクター制御
-    const inputSoulColor = document.getElementById('input-soul-color');
+    // [ISSUE-018] 新規登録のカラーセレクター制御（最大5色）
     const inputSoulColorContainer = document.getElementById('input-soul-color-container');
-    if (inputSoulColorContainer && inputSoulColor) {
-        const chips = inputSoulColorContainer.querySelectorAll('.color-chip');
-        chips.forEach(chip => {
-            chip.addEventListener('click', () => {
-                chips.forEach(c => c.classList.remove('active'));
-                chip.classList.add('active');
-                inputSoulColor.value = chip.getAttribute('data-color');
-            });
-        });
+    const inputSoulColorPreview = document.getElementById('input-soul-color-preview');
+    // モーダルを開き直したときに選択をリセットできるよう、初期化関数を保持しておく
+    let getInputSoulColors = () => [];
+    let resetInputSoulColors = () => {};
+    if (inputSoulColorContainer) {
+        const setupInputSelector = (initial) => {
+            getInputSoulColors = initSoulColorSelector(
+                inputSoulColorContainer,
+                initial,
+                (colors) => {
+                    if (!inputSoulColorPreview) return;
+                    inputSoulColorPreview.innerHTML = colors.length
+                        ? buildSoulColorBadgeHtml(colors)
+                        : '<span style="font-size: 0.8rem; color: var(--text-secondary);">未設定</span>';
+                }
+            );
+        };
+        setupInputSelector([]);
+        // チップは innerHTML を作り直さず再バインドするとリスナーが重複するため、
+        // markup を作り直したうえで初期化し直す
+        resetInputSoulColors = () => {
+            inputSoulColorContainer.innerHTML = buildColorChipsHtml();
+            setupInputSelector([]);
+        };
     }
 
     // 検索インプット
@@ -364,14 +438,7 @@ function initApp() {
         btnCancelCustomer.addEventListener('click', () => {
             if (customerModal) customerModal.classList.remove('active');
             if (customerForm) customerForm.reset();
-            // カラー選択リセット
-            if (inputSoulColorContainer && inputSoulColor) {
-                const chips = inputSoulColorContainer.querySelectorAll('.color-chip');
-                chips.forEach(c => c.classList.remove('active'));
-                const clearChip = inputSoulColorContainer.querySelector('.color-chip.clear');
-                if (clearChip) clearChip.classList.add('active');
-                inputSoulColor.value = 'clear';
-            }
+            resetInputSoulColors(); // カラー選択リセット
         });
     }
 
@@ -392,24 +459,16 @@ function initApp() {
             const phone = phoneEl ? phoneEl.value : '';
             const birthdayEl = document.getElementById('input-birthday');
             const birthday = birthdayEl ? birthdayEl.value : '';
-            const soulColor = inputSoulColor ? inputSoulColor.value : 'clear';
+            const soulColors = getInputSoulColors();
             const referrerEl = document.getElementById('input-referrer');
             const referrer = referrerEl ? referrerEl.value : '';
             const initialConsultation = inputInitialConsultation ? inputInitialConsultation.value : '';
             const memo = inputMemo ? inputMemo.value : '';
 
-            const newCust = addCustomer(name, kana, phone, memo, customerNo, birthday, soulColor, referrer, initialConsultation);
+            const newCust = addCustomer(name, kana, phone, memo, customerNo, birthday, soulColors, referrer, initialConsultation);
             if (customerModal) customerModal.classList.remove('active');
             if (customerForm) customerForm.reset();
-
-            // カラー選択リセット
-            if (inputSoulColorContainer && inputSoulColor) {
-                const chips = inputSoulColorContainer.querySelectorAll('.color-chip');
-                chips.forEach(c => c.classList.remove('active'));
-                const clearChip = inputSoulColorContainer.querySelector('.color-chip.clear');
-                if (clearChip) clearChip.classList.add('active');
-                inputSoulColor.value = 'clear';
-            }
+            resetInputSoulColors(); // カラー選択リセット
 
             renderCustomerList();
             showCustomerDetail(newCust.id); // 新規登録後に詳細画面を開く
@@ -677,7 +736,8 @@ function initApp() {
 
                 dailyVisits.slice(0, 3).forEach(visit => {
                     const dot = document.createElement('span');
-                    dot.className = `customer-color-indicator bg-${visit.customer.soulColor || 'clear'}`;
+                    // [ISSUE-018] カレンダーのドットは1色目（メインカラー）を使う
+                    dot.className = `customer-color-indicator bg-${getMainSoulColor(visit.customer)}`;
                     dot.style.width = '10px';
                     dot.style.height = '10px';
                     dot.style.marginRight = '0';
@@ -715,7 +775,7 @@ function initApp() {
                 item.innerHTML = `
                     <div>
                         <div style="font-weight: 600; display: flex; align-items: center; gap: 6px;">
-                            <span class="customer-color-indicator bg-${visit.customer.soulColor || 'clear'}"></span>
+                            <span class="customer-color-indicator bg-${getMainSoulColor(visit.customer)}"></span>
                             <span>${visit.customer.name}</span>
                             <span style="font-size: 0.8rem; font-weight: normal; color: var(--text-secondary);">${visit.record.time || ''}</span>
                         </div>

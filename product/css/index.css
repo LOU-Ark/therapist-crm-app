@@ -524,6 +524,70 @@ textarea.form-control {
     box-shadow: 0 0 12px rgba(255, 255, 255, 0.8), 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
+/* [ISSUE-018] 選択順（1〜5）をチップ上にバッジ表示する */
+.color-chip.active::after {
+    content: attr(data-order);
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    min-width: 16px;
+    height: 16px;
+    padding: 0 3px;
+    border-radius: 8px;
+    background: #0f172a;
+    color: #fff;
+    font-size: 0.65rem;
+    font-weight: 700;
+    line-height: 16px;
+    text-align: center;
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.7);
+}
+
+/* 上限5色に達したとき、未選択チップは選べないことを示す */
+.color-chip.disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+.color-chip.disabled:hover {
+    transform: none;
+}
+
+/* [ISSUE-018] 選択中カラーのプレビュー（上段3色・下段2色） */
+/* ラベル横にインライン表示し、縦方向のスペースを増やさない
+   （.tab-content は max-height:400px のスクロール領域のため、
+     行を増やすと保存ボタンが折り返しの外へ押し出されてしまう） */
+.soul-color-selected-preview {
+    display: inline-flex;
+    align-items: center;
+}
+
+.soul-color-badge {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    vertical-align: middle;
+}
+
+.soul-color-badge-row {
+    display: flex;
+    gap: 3px;
+    justify-content: center;
+}
+
+.soul-dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.soul-color-badge.sm .soul-dot {
+    width: 9px;
+    height: 9px;
+}
+
 /* 各色のバックグラウンド定義 */
 .color-chip.red { background-color: #ef4444; }
 .color-chip.coral { background-color: #f87171; }

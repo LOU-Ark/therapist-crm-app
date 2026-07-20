@@ -1,5 +1,43 @@
 // セラピスト向け顧客管理アプリ：データ管理モジュール (Core Logic)
 
+// [ISSUE-018] Soul Color は最大5色まで登録できる（上段3色・下段2色で表示）
+export const MAX_SOUL_COLORS = 5;
+
+// 選択可能なソウルカラー（表示順）。UI側のチップ生成もこの定義を正本とする。
+export const SOUL_COLOR_DEFS = [
+    { key: 'red', label: 'レッド' },
+    { key: 'coral', label: 'コーラル' },
+    { key: 'orange', label: 'オレンジ' },
+    { key: 'gold', label: 'ゴールド' },
+    { key: 'yellow', label: 'イエロー' },
+    { key: 'olive', label: 'オリーブ' },
+    { key: 'green', label: 'グリーン' },
+    { key: 'turquoise', label: 'ターコイズ' },
+    { key: 'blue', label: 'ブルー' },
+    { key: 'royal-blue', label: 'ロイヤルブルー' },
+    { key: 'violet', label: 'バイオレット' },
+    { key: 'magenta', label: 'マゼンタ' },
+    { key: 'clear', label: 'クリア' },
+];
+
+/**
+ * 顧客のソウルカラー配列を取得する（常に配列を返す）。
+ * 旧スキーマ（単一 soulColor）のデータにも安全に対応する。
+ */
+export function getSoulColors(customer) {
+    if (!customer) return [];
+    if (Array.isArray(customer.soulColors)) return customer.soulColors;
+    return customer.soulColor && customer.soulColor !== 'clear' ? [customer.soulColor] : [];
+}
+
+/**
+ * メインカラー（1色目）を返す。
+ * 顧客カードの枠色・背景グラデーションおよびカレンダーの日付ドットに使用する。
+ */
+export function getMainSoulColor(customer) {
+    return getSoulColors(customer)[0] || 'clear';
+}
+
 // 初期デモデータ
 const INITIAL_CUSTOMERS = [
     {
@@ -10,6 +48,7 @@ const INITIAL_CUSTOMERS = [
         phone: "090-1234-5678",
         birthday: "1990-05-15",
         soulColor: "violet",
+        soulColors: ["violet", "turquoise", "magenta", "blue", "coral"],
         referrer: "佐藤 健太",
         initialConsultation: "体重 52kg。過去に大きな病歴はなし。アトピー肌のためオイルの刺激に注意が必要。",
         memo: "肩こりがひどい。強めの施術を希望。",
@@ -42,6 +81,7 @@ const INITIAL_CUSTOMERS = [
         phone: "080-9876-5432",
         birthday: "1985-11-20",
         soulColor: "gold",
+        soulColors: ["gold", "olive", "orange", "royal-blue", "yellow"],
         referrer: "なし（ウェブ検索）",
         initialConsultation: "体重 70kg。腰痛持ち（軽度のヘルニア）。長時間のデスクワークが原因と思われる。",
         memo: "腰痛持ち。施術後は冷たいお茶を好む。",
@@ -106,6 +146,28 @@ export function getCustomers() {
             else c.soulColor = "clear";
             updated = true;
         }
+        // [ISSUE-018] Soul Color を単一色から最大5色の配列へ移行する。
+        // 旧 soulColor（単一色）は 1色目（メインカラー）として引き継ぐ。
+        if (!Array.isArray(c.soulColors)) {
+            c.soulColors = c.soulColor && c.soulColor !== "clear" ? [c.soulColor] : [];
+            updated = true;
+        }
+        // 上限5色を超える不正データは切り詰める
+        if (c.soulColors.length > MAX_SOUL_COLORS) {
+            c.soulColors = c.soulColors.slice(0, MAX_SOUL_COLORS);
+            updated = true;
+        }
+        // [ISSUE-018] デモ顧客は5色表示（上段3・下段2）の確認用に既定値を復元する。
+        // 1色以下のまま＝ユーザーが未設定の状態なので、上書きしても入力を失わない。
+        if (c.soulColors.length <= 1) {
+            if (c.id === "1") {
+                c.soulColors = ["violet", "turquoise", "magenta", "blue", "coral"];
+                updated = true;
+            } else if (c.id === "2") {
+                c.soulColors = ["gold", "olive", "orange", "royal-blue", "yellow"];
+                updated = true;
+            }
+        }
         if (c.birthday === undefined) {
             c.birthday = "";
             updated = true;
@@ -159,10 +221,13 @@ export function saveCustomers(customers) {
 }
 
 // 顧客の新規登録
-export function addCustomer(name, kana, phone, memo, customerNo, birthday, soulColor, referrer, initialConsultation) {
+export function addCustomer(name, kana, phone, memo, customerNo, birthday, soulColors, referrer, initialConsultation) {
     const customers = getCustomers();
     // 顧客Noが指定されていない場合は自動発番
     const finalCustomerNo = customerNo || `C-${(customers.length + 1).toString().padStart(4, '0')}`;
+    // [ISSUE-018] 最大5色の配列を受け取る。旧シグネチャ（単一色の文字列）でも壊れないようにする。
+    const colors = (Array.isArray(soulColors) ? soulColors : (soulColors ? [soulColors] : []))
+        .slice(0, MAX_SOUL_COLORS);
     const newCustomer = {
         id: Date.now().toString(),
         customerNo: finalCustomerNo,
@@ -171,7 +236,7 @@ export function addCustomer(name, kana, phone, memo, customerNo, birthday, soulC
         phone,
         memo,
         birthday: birthday || "",
-        soulColor: soulColor || "clear",
+        soulColors: colors,
         referrer: referrer || "",
         initialConsultation: initialConsultation || "",
         records: []

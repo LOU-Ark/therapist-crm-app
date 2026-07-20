@@ -72,7 +72,7 @@
 <body>
     <header class="header">
         <h1>セラピスト向け顧客管理アプリ</h1>
-        <p>Project Portal Hub <span style="background: var(--accent-secondary); color: #fff; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: bold; margin-left: 8px;">v1.6.1</span></p>
+        <p>Project Portal Hub <span style="background: var(--accent-secondary); color: #fff; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: bold; margin-left: 8px;">v1.7.0</span></p>
         <div style="margin-top: 20px; display: inline-flex; align-items: center; gap: 10px; background: var(--card-bg); padding: 8px 16px; border-radius: 20px; border: 1px solid var(--glass-border); backdrop-filter: blur(10px);">
             <span style="font-size: 0.85rem; color: var(--text-dim);">🌙 Dark</span>
             <input type="range" id="theme-slider" min="0" max="100" value="0" style="width: 120px; accent-color: var(--accent-primary); cursor: pointer;" title="テーマ輝度ブレンド">
@@ -130,6 +130,14 @@
             <div style="font-size: 1.3rem; font-weight: 600; margin-bottom: 16px;">ポータル改善履歴</div>
             
             <details class="issue-card" open style="background: rgba(0,0,0,0.2); padding: 16px; border-radius: 12px; border: 1px solid var(--glass-border); text-align: left; margin-bottom: 12px;">
+                <summary style="font-weight: 600; cursor: pointer; color: var(--accent-primary);">[MINOR] v1.7.0 - 過去の施術記録を編集する機能の追加 (ISSUE-020)</summary>
+                <div style="margin-top: 12px; font-size: 0.9rem; color: var(--text-dim); line-height: 1.6;">
+                    <p style="margin: 0 0 8px 0;">一度作成した施術記録を後から編集できるようにしました。これにより、旧バージョンで作られた記録へ「訴え」「処方」「メモ」を追記できます。記録カードの「✏️ 編集」から既存の追加モーダルが編集モードで開き、既存値がプリフィルされます。編集対象は<strong>配列インデックスではなく一意ID</strong>で特定します（カレンダー経由の追加が <code>unshift</code> のためインデックスは容易にズレ、別記録を破壊する恐れがあるため）。既存記録にはマイグレーションでIDを付与します。<strong>「編集→キャンセル→新規追加」で追加が更新に化けないこと、更新後に件数が増えないこと</strong>まで実測確認済みです。</p>
+                    <a href="viewer.html?doc=../03_Implementation/REPORT-ISSUE-020.md" style="display: inline-flex; text-decoration: none; padding: 6px 12px; font-size: 0.8rem; border-radius: 8px; margin-top: 8px; background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary)); color: #fff; font-weight: bold; border: none;">📖 詳細レポートを開く →</a>
+                </div>
+            </details>
+
+            <details class="issue-card" style="background: rgba(0,0,0,0.2); padding: 16px; border-radius: 12px; border: 1px solid var(--glass-border); text-align: left; margin-bottom: 12px;">
                 <summary style="font-weight: 600; cursor: pointer; color: var(--accent-primary);">v1.6.1 - 既存記録で訴え・処方・メモが表示されないバグの修正 (ISSUE-019)</summary>
                 <div style="margin-top: 12px; font-size: 0.9rem; color: var(--text-dim); line-height: 1.6;">
                     <p style="margin: 0 0 8px 0;">v1.6.0 で追加した3項目が、既存の施術記録では画面に現れませんでした。旧バージョンで作られた記録はマイグレーションで<strong>空文字</strong>が入りますが、描画側が「値があるときだけ行を出す」条件付きレンダリングだったため、空文字が falsy と判定され<strong>行ごと消えていた</strong>ことが原因です。未記入でも項目名は必ず表示し、値のみ「未記入」と淡色表示する方式に変更しました。あわせて両タブで重複していた描画コードを <code>buildRecordDetailsHtml()</code> に集約しています。<strong>旧データ相当を再現した検証を追加</strong>し、空・値ありの両系統で確認済みです。</p>

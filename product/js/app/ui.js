@@ -1,7 +1,7 @@
 // セラピスト向け顧客管理アプリ：UI・DOM操作制御モジュール
 
 import {
-    getCustomers, addCustomer, addRecord, updateCustomer,
+    getCustomers, addCustomer, addRecord, updateCustomer, updateRecord,
     getSoulColors, getMainSoulColor, MAX_SOUL_COLORS, SOUL_COLOR_DEFS
 } from './data.js';
 
@@ -56,6 +56,37 @@ function buildRecordDetailsHtml(r) {
                 ${filled ? value : '未記入'}
             </div>`;
     }).join('');
+}
+
+/**
+ * [ISSUE-020] 施術記録カードに「編集」ボタンを描画する。
+ * 過去の記録へ訴え・処方・メモを後から追記できるようにするため。
+ */
+function buildRecordEditButtonHtml(r) {
+    return `
+        <div style="margin-top: 10px; text-align: right;">
+            <button type="button" class="btn-edit-record" data-record-id="${r.id}"
+                style="background: rgba(255,255,255,0.06); color: var(--text-secondary);
+                       border: 1px solid var(--border-glass); border-radius: 8px;
+                       padding: 4px 12px; font-size: 0.78rem; cursor: pointer;">
+                ✏️ 編集
+            </button>
+        </div>`;
+}
+
+/**
+ * [ISSUE-020] 記録カード内の編集ボタンにハンドラを結び付ける。
+ * 実際にモーダルを開く処理は initApp 内の openRecordEditor が担うため、
+ * ここでは window 経由ではなくコールバックの実体を後から差し込む。
+ */
+let onRecordEditRequested = null;
+function attachRecordEditHandler(container, customerId, recordId) {
+    const btn = container.querySelector('.btn-edit-record');
+    if (!btn) return;
+    btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (onRecordEditRequested) onRecordEditRequested(customerId, recordId);
+    });
 }
 
 /**
@@ -230,8 +261,10 @@ function initApp() {
                             <div class="history-item-body">
                                 <div style="font-weight: 600; margin-bottom: 6px; color: var(--text-primary);">${r.type}</div>
                                 ${buildRecordDetailsHtml(r)}
+                                ${buildRecordEditButtonHtml(r)}
                             </div>
                         `;
+                        attachRecordEditHandler(div, customer.id, r.id);
                         tabContentArea.appendChild(div);
                     });
                 }
@@ -252,8 +285,10 @@ function initApp() {
                             <div class="history-item-body">
                                 <div style="font-weight: 600; margin-bottom: 4px;">${r.type}</div>
                                 ${buildRecordDetailsHtml(r)}
+                                ${buildRecordEditButtonHtml(r)}
                             </div>
                         `;
+                        attachRecordEditHandler(div, customer.id, r.id);
                         tabContentArea.appendChild(div);
                     });
                 }
@@ -495,9 +530,58 @@ function initApp() {
         });
     }
 
+    // -------------------------------------------------------------------
+    // [ISSUE-020] 施術記録の編集モード
+    // 追加用モーダルを流用し、editingRecord の有無で追加／更新を切り替える
+    // -------------------------------------------------------------------
+    const recordModalTitle = document.getElementById('record-modal-title');
+    let editingRecord = null; // { customerId, recordId } または null（＝新規追加）
+
+    /** モーダルを新規追加モードに戻す。閉じるときは必ずこれを通す */
+    function resetRecordModal() {
+        editingRecord = null;
+        if (recordForm) recordForm.reset();
+        if (recordModalTitle) recordModalTitle.textContent = '施術内容・金額の記録';
+        if (btnSubmitRecord) btnSubmitRecord.textContent = '記録する';
+    }
+
+    /** 既存記録を読み込んでモーダルを編集モードで開く */
+    function openRecordEditor(customerId, recordId) {
+        const customer = getCustomers().find(c => c.id === customerId);
+        const record = customer && (customer.records || []).find(r => r.id === recordId);
+        if (!record) {
+            alert('対象の施術記録が見つかりませんでした。');
+            return;
+        }
+
+        editingRecord = { customerId, recordId };
+
+        const setVal = (id, value) => {
+            const el = document.getElementById(id);
+            if (el) el.value = value != null ? value : '';
+        };
+        setVal('input-date', record.date);
+        setVal('input-time', record.time);
+        setVal('input-type', record.type);
+        setVal('input-client-complaint', record.clientComplaint);
+        setVal('input-prescription', record.prescription);
+        setVal('input-therapist-note', record.therapistNote);
+        setVal('input-amount', record.amount);
+
+        // 編集時は対象顧客が確定しているため、顧客選択セレクトは隠す
+        if (recordCustomerSelectGroup) recordCustomerSelectGroup.style.display = 'none';
+        if (recordModalTitle) recordModalTitle.textContent = '施術記録の編集';
+        if (btnSubmitRecord) btnSubmitRecord.textContent = '更新する';
+        if (recordModal) recordModal.classList.add('active');
+    }
+
+    // 記録カードの編集ボタンから呼ばれるコールバックを登録
+    onRecordEditRequested = openRecordEditor;
+
     // レコード登録モーダルの表示・非表示
     if (btnAddRecord) {
         btnAddRecord.addEventListener('click', () => {
+            resetRecordModal(); // 直前の編集内容を持ち越さない
             if (recordCustomerSelectGroup) recordCustomerSelectGroup.style.display = 'none';
             // デフォルトで今日の日付をセット
             const today = new Date().toISOString().split('T')[0];
@@ -509,7 +593,7 @@ function initApp() {
     if (btnCancelRecord) {
         btnCancelRecord.addEventListener('click', () => {
             if (recordModal) recordModal.classList.remove('active');
-            if (recordForm) recordForm.reset();
+            resetRecordModal();
         });
     }
 
@@ -533,6 +617,25 @@ function initApp() {
 
             if (!date || !type || !amount) {
                 alert('来店日、施術内容、金額は必須項目です。');
+                return;
+            }
+
+            // [ISSUE-020] 編集モードなら既存記録を更新して終了する
+            if (editingRecord) {
+                const result = updateRecord(editingRecord.customerId, editingRecord.recordId, {
+                    date, type, amount, time, clientComplaint, prescription, therapistNote
+                });
+                const editedCustomerId = editingRecord.customerId;
+
+                if (recordModal) recordModal.classList.remove('active');
+                resetRecordModal();
+
+                if (!result) {
+                    alert('施術記録の更新に失敗しました。');
+                    return;
+                }
+                renderCalendar();          // 日付を変更した場合にドットを追従させる
+                showCustomerDetail(editedCustomerId);
                 return;
             }
 
@@ -839,6 +942,7 @@ function initApp() {
     if (btnCalendarAddRecord) {
         btnCalendarAddRecord.addEventListener('click', () => {
             if (!selectedCalendarDateStr) return;
+            resetRecordModal(); // [ISSUE-020] 直前の編集モードを持ち越さない
             if (recordCustomerSelectGroup && inputRecordCustomerId) {
                 recordCustomerSelectGroup.style.display = 'block';
                 inputRecordCustomerId.innerHTML = '';

@@ -31,6 +31,15 @@ export function getSoulColors(customer) {
 }
 
 /**
+ * [ISSUE-020] 施術記録の一意IDを発番する。
+ * 記録の編集は配列インデックスではなくこのIDで対象を特定する。
+ * （カレンダー経由の追加は unshift のため、インデックスは容易にズレる）
+ */
+export function generateRecordId() {
+    return `r-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+/**
  * メインカラー（1色目）を返す。
  * 顧客カードの枠色・背景グラデーションおよびカレンダーの日付ドットに使用する。
  */
@@ -198,6 +207,8 @@ export function getCustomers() {
         if (c.records && Array.isArray(c.records)) {
             c.records.forEach(r => {
                 if (!r || typeof r !== 'object') return;
+                // [ISSUE-020] 既存記録にも編集用の一意IDを付与する
+                if (!r.id) { r.id = generateRecordId(); updated = true; }
                 if (r.time === undefined) { r.time = ""; updated = true; }
                 if (r.clientComplaint === undefined) { r.clientComplaint = ""; updated = true; }
                 if (r.prescription === undefined) { r.prescription = ""; updated = true; }
@@ -264,6 +275,7 @@ export function addRecord(customerId, date, type, amount, time, clientComplaint,
     const customer = customers.find(c => c.id === customerId);
     if (customer) {
         customer.records.unshift({
+            id: generateRecordId(),
             date,
             type,
             amount: parseInt(amount, 10) || 0,
@@ -276,5 +288,32 @@ export function addRecord(customerId, date, type, amount, time, clientComplaint,
         return customer;
     }
     return null;
+}
+
+/**
+ * [ISSUE-020] 既存の施術記録を更新する。
+ * 過去に作られた記録へ「訴え」「処方」「メモ」を後から追記できるようにするため。
+ * @param {string} customerId 対象顧客のID
+ * @param {string} recordId   対象記録のID
+ * @param {object} fields     更新するフィールド（date/type/amount/time/訴え/処方/メモ）
+ * @returns {object|null} 更新後の顧客オブジェクト。対象が見つからない場合は null
+ */
+export function updateRecord(customerId, recordId, fields) {
+    const customers = getCustomers();
+    const customer = customers.find(c => c.id === customerId);
+    if (!customer || !Array.isArray(customer.records)) return null;
+
+    const record = customer.records.find(r => r.id === recordId);
+    if (!record) return null;
+
+    // id は書き換えさせない（対象特定の拠り所のため）
+    const { id, ...rest } = fields || {};
+    Object.assign(record, rest);
+    if (rest.amount !== undefined) {
+        record.amount = parseInt(rest.amount, 10) || 0;
+    }
+
+    saveCustomers(customers);
+    return customer;
 }
 

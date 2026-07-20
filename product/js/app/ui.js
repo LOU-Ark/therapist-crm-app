@@ -35,6 +35,30 @@ function buildSoulColorBadgeHtml(colors, size = 'md') {
 }
 
 /**
+ * [ISSUE-019] 施術記録の「訴え・処方・メモ」を描画する。
+ *
+ * 以前は値があるときだけ行を出していたため、旧バージョンで作成された記録
+ * （マイグレーションで空文字が入る）では行ごと消え、項目自体が存在しない
+ * ように見えていた。未記入でも項目名は必ず表示し、値だけをプレースホルダに
+ * 置き換えることで「未記入」であることが分かるようにする。
+ */
+function buildRecordDetailsHtml(r) {
+    const rows = [
+        { label: '訴え', value: r.clientComplaint, color: 'var(--accent-warning)' },
+        { label: '処方', value: r.prescription, color: 'var(--accent-cyan)' },
+        { label: 'メモ', value: r.therapistNote, color: 'var(--accent-purple)' },
+    ];
+    return rows.map(({ label, value, color }) => {
+        const filled = value && value.trim();
+        return `
+            <div style="font-size: 0.85rem; margin-top: 4px;${filled ? '' : ' opacity: 0.45;'}">
+                <span style="color: ${color}; font-weight: 500;">${label}:</span>
+                ${filled ? value : '未記入'}
+            </div>`;
+    }).join('');
+}
+
+/**
  * カラーチップ群を「最大5色まで選択できるセレクター」として初期化する。
  * 選択順が保持され、チップには順番バッジ（1〜5）が表示される。
  * @returns {() => string[]} 現在の選択色を返すゲッター
@@ -205,9 +229,7 @@ function initApp() {
                             </div>
                             <div class="history-item-body">
                                 <div style="font-weight: 600; margin-bottom: 6px; color: var(--text-primary);">${r.type}</div>
-                                ${r.clientComplaint ? `<div style="font-size: 0.85rem; margin-top: 4px;"><span style="color: var(--accent-warning); font-weight: 500;">訴え:</span> ${r.clientComplaint}</div>` : ''}
-                                ${r.prescription ? `<div style="font-size: 0.85rem; margin-top: 4px;"><span style="color: var(--accent-cyan); font-weight: 500;">処方:</span> ${r.prescription}</div>` : ''}
-                                ${r.therapistNote ? `<div style="font-size: 0.85rem; margin-top: 4px; font-style: italic; color: var(--text-secondary);"><span style="color: var(--accent-purple); font-weight: 500; font-style: normal;">メモ:</span> ${r.therapistNote}</div>` : ''}
+                                ${buildRecordDetailsHtml(r)}
                             </div>
                         `;
                         tabContentArea.appendChild(div);
@@ -229,9 +251,7 @@ function initApp() {
                             </div>
                             <div class="history-item-body">
                                 <div style="font-weight: 600; margin-bottom: 4px;">${r.type}</div>
-                                ${r.clientComplaint ? `<div style="font-size: 0.85rem; margin-top: 4px;"><span style="color: var(--accent-warning); font-weight: 500;">訴え:</span> ${r.clientComplaint}</div>` : ''}
-                                ${r.prescription ? `<div style="font-size: 0.85rem; margin-top: 4px;"><span style="color: var(--accent-cyan); font-weight: 500;">処方:</span> ${r.prescription}</div>` : ''}
-                                ${r.therapistNote ? `<div style="font-size: 0.85rem; margin-top: 4px; font-style: italic; color: var(--text-secondary);"><span style="color: var(--accent-purple); font-weight: 500; font-style: normal;">メモ:</span> ${r.therapistNote}</div>` : ''}
+                                ${buildRecordDetailsHtml(r)}
                             </div>
                         `;
                         tabContentArea.appendChild(div);

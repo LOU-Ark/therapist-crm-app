@@ -47,7 +47,7 @@ export function getMainSoulColor(customer) {
     return getSoulColors(customer)[0] || 'clear';
 }
 
-// 初期デモデータ
+// 初期デモデータ (追加で3名のリアルなカルテを作成)
 const INITIAL_CUSTOMERS = [
     {
         id: "1",
@@ -114,30 +114,129 @@ const INITIAL_CUSTOMERS = [
                 therapistNote: "リフレッシュしたとおっしゃっていました。"
             }
         ]
+    },
+    {
+        id: "3",
+        customerNo: "C-0003",
+        name: "鈴木 一郎",
+        kana: "スズキ イチロー",
+        phone: "090-5555-6666",
+        birthday: "1978-08-30",
+        soulColor: "blue",
+        soulColors: ["blue", "royal-blue", "clear"],
+        referrer: "山田 花子",
+        initialConsultation: "過去にテニスで右肩を痛めた経験あり。強張りが残りやすい。",
+        memo: "右肩の可動域が狭まりやすいので注意深く施術する。",
+        records: [
+            {
+                date: "2026-07-18",
+                type: "全身もみほぐし 90分",
+                amount: 10000,
+                time: "13:00 - 14:30",
+                clientComplaint: "全体的に体が重く、特に肩甲骨の内側が張っている。",
+                prescription: "全身の筋肉をくまなくほぐし、肩甲骨はがしのストレッチを取り入れる。",
+                therapistNote: "右肩の引っ掛かりを気にされていたが、施術後は腕がスムーズに上がるようになった。"
+            }
+        ]
+    },
+    {
+        id: "4",
+        customerNo: "C-0004",
+        name: "田中 結衣",
+        kana: "タナカ ユイ",
+        phone: "080-1111-2222",
+        birthday: "1995-03-03",
+        soulColor: "coral",
+        soulColors: ["coral", "yellow", "gold", "clear"],
+        referrer: "なし（インスタグラム）",
+        initialConsultation: "冷え性とむくみが悩み。立ち仕事のため足が疲れやすい。",
+        memo: "アロマの香りはフルーティーなものを好む。",
+        records: [
+            {
+                date: "2026-07-20",
+                type: "アロママッサージ 60分",
+                amount: 8500,
+                time: "15:00 - 16:00",
+                clientComplaint: "足首まわりがパンパンにむくんでだるい。冷房による冷えも感じる。",
+                prescription: "ジュニパーベリーとグレープフルーツを配合したオイルで、下半身を重点的にトリートメント。",
+                therapistNote: "ふくらはぎの張りが非常に強く、温めながらしっかり流した。施術後は靴が緩くなったと喜ばれていた。"
+            }
+        ]
+    },
+    {
+        id: "5",
+        customerNo: "C-0005",
+        name: "渡辺 美咲",
+        kana: "ワタナベ ミサキ",
+        phone: "070-4444-5555",
+        birthday: "1988-12-25",
+        soulColor: "yellow",
+        soulColors: ["yellow", "clear"],
+        referrer: "なし（チラシ）",
+        initialConsultation: "乾燥肌。施術用のシーツやタオルの肌触りを確認する。",
+        memo: "お肌が非常にデリケートなので、低刺激なライスブランオイルを使用する。",
+        records: [
+            {
+                date: "2026-07-12",
+                type: "フェイシャル 45分",
+                amount: 6000,
+                time: "11:00 - 11:45",
+                clientComplaint: "顔のくすみと乾燥が気になる。リラックスしたい。",
+                prescription: "高保湿パックと優しいタッチのフェイシャルトリートメント。イエローの明るい気運を高める。",
+                therapistNote: "お肌がとても柔らかくなりました。施術中はずっと眠られていて、よくリラックスできたご様子。"
+            }
+        ]
     }
 ];
 
+// Braveなどプライバシー設定の厳しいブラウザでSecurityErrorが発生した際のメモリ上フォールバック用キャッシュ
+let memoryCustomersCache = null;
+
 // LocalStorage からデータをロード、なければ初期化
 export function getCustomers() {
-    const data = localStorage.getItem('therapist_customers');
+    let data = null;
+    try {
+        data = localStorage.getItem('therapist_customers');
+    } catch (e) {
+        console.warn('Brave/Browser security policy blocked localStorage read. Using in-memory fallback.', e);
+        if (memoryCustomersCache) {
+            return memoryCustomersCache;
+        }
+    }
+
     let customers = [];
     if (!data) {
         customers = INITIAL_CUSTOMERS;
-        localStorage.setItem('therapist_customers', JSON.stringify(customers));
+        try {
+            localStorage.setItem('therapist_customers', JSON.stringify(customers));
+        } catch (e) {
+            console.warn('Brave/Browser security policy blocked localStorage write.', e);
+        }
+        memoryCustomersCache = customers;
         return customers;
     }
     try {
         customers = JSON.parse(data);
     } catch (e) {
         customers = INITIAL_CUSTOMERS;
-        localStorage.setItem('therapist_customers', JSON.stringify(customers));
+        try {
+            localStorage.setItem('therapist_customers', JSON.stringify(customers));
+        } catch (e) {
+            console.warn('Brave/Browser security policy blocked localStorage write.', e);
+        }
+        memoryCustomersCache = customers;
         return customers;
     }
 
     // 配列でない場合は初期データでリセット
     if (!Array.isArray(customers)) {
         customers = INITIAL_CUSTOMERS;
-        localStorage.setItem('therapist_customers', JSON.stringify(customers));
+        try {
+            localStorage.setItem('therapist_customers', JSON.stringify(customers));
+        } catch (e) {
+            console.warn('Brave/Browser security policy blocked localStorage write.', e);
+        }
+        memoryCustomersCache = customers;
         return customers;
     }
 
@@ -228,7 +327,12 @@ export function getCustomers() {
 
 // 顧客情報の保存
 export function saveCustomers(customers) {
-    localStorage.setItem('therapist_customers', JSON.stringify(customers));
+    memoryCustomersCache = customers; // メモリ上のキャッシュを常に最新にする
+    try {
+        localStorage.setItem('therapist_customers', JSON.stringify(customers));
+    } catch (e) {
+        console.warn('Brave/Browser security policy blocked localStorage write.', e);
+    }
 }
 
 // 顧客の新規登録

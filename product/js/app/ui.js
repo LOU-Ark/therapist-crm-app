@@ -617,14 +617,23 @@ function initApp() {
     const themeSlider = document.getElementById('theme-slider');
     const root = document.documentElement;
     if (themeSlider) {
-        const savedBlend = localStorage.getItem('theme-blend') || '0';
+        let savedBlend = '0';
+        try {
+            savedBlend = localStorage.getItem('theme-blend') || '0';
+        } catch (e) {
+            console.warn('Brave/Browser security policy blocked localStorage read for theme.', e);
+        }
         themeSlider.value = savedBlend;
         root.style.setProperty('--theme-blend', savedBlend + '%');
 
         themeSlider.addEventListener('input', (e) => {
             const val = e.target.value;
             root.style.setProperty('--theme-blend', val + '%');
-            localStorage.setItem('theme-blend', val);
+            try {
+                localStorage.setItem('theme-blend', val);
+            } catch (err) {
+                console.warn('Brave/Browser security policy blocked localStorage write for theme.', err);
+            }
         });
     }
 

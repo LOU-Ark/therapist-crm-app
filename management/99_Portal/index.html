@@ -72,7 +72,7 @@
 <body>
     <header class="header">
         <h1>セラピスト向け顧客管理アプリ</h1>
-        <p>Project Portal Hub <span style="background: var(--accent-secondary); color: #fff; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: bold; margin-left: 8px;">v1.10.0</span></p>
+        <p>Project Portal Hub <span style="background: var(--accent-secondary); color: #fff; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: bold; margin-left: 8px;">v1.10.1</span></p>
         <div style="margin-top: 20px; display: inline-flex; align-items: center; gap: 10px; background: var(--card-bg); padding: 8px 16px; border-radius: 20px; border: 1px solid var(--glass-border); backdrop-filter: blur(10px);">
             <span style="font-size: 0.85rem; color: var(--text-dim);">🌙 Dark</span>
             <input type="range" id="theme-slider" min="0" max="100" value="0" style="width: 120px; accent-color: var(--accent-primary); cursor: pointer;" title="テーマ輝度ブレンド">
@@ -84,14 +84,23 @@
         const themeSlider = document.getElementById('theme-slider');
         const root = document.documentElement;
 
-        const savedBlend = localStorage.getItem('theme-blend') || '0';
+        let savedBlend = '0';
+        try {
+            savedBlend = localStorage.getItem('theme-blend') || '0';
+        } catch (e) {
+            console.warn('Brave/Browser security policy blocked localStorage read for theme blend in portal.', e);
+        }
         themeSlider.value = savedBlend;
         root.style.setProperty('--theme-blend', savedBlend + '%');
 
         themeSlider.addEventListener('input', (e) => {
             const val = e.target.value;
             root.style.setProperty('--theme-blend', val + '%');
-            localStorage.setItem('theme-blend', val);
+            try {
+                localStorage.setItem('theme-blend', val);
+            } catch (err) {
+                console.warn('Brave/Browser security policy blocked localStorage write for theme blend in portal.', err);
+            }
         });
     </script>
 
@@ -130,6 +139,14 @@
             <div style="font-size: 1.3rem; font-weight: 600; margin-bottom: 16px;">ポータル改善履歴</div>
             
             <details class="issue-card" open style="background: rgba(0,0,0,0.2); padding: 16px; border-radius: 12px; border: 1px solid var(--glass-border); text-align: left; margin-bottom: 12px;">
+                <summary style="font-weight: 600; cursor: pointer; color: var(--accent-primary);">v1.10.1 - Brave等の特定ブラウザでのカレンダー停止バグの解消、スライダー修復、およびオーラ背景とデモデータ強化 (ISSUE-025)</summary>
+                <div style="margin-top: 12px; font-size: 0.9rem; color: var(--text-dim); line-height: 1.6;">
+                    <p style="margin: 0 0 8px 0;">Braveブラウザのセキュリティシールドによる localStorage ブロックに伴い、SecurityError 例外で JavaScript 読み込みがクラッシュし、カレンダーやスライダー等の機能がすべて停止していたバグを修正しました。localStorage へのアクセスを try-catch で保護し、ブロック時はメモリキャッシュに安全にフォールバックさせるとともに、検証用に鈴木、田中、渡辺の3名のデモカルテを追加しました。また、ブラウザ間の色ズレを防ぎ、常に美しい極彩色のオーラ背景が描画されるように CSS を強化しました。</p>
+                    <a href="viewer.html?doc=../03_Implementation/REPORT-ISSUE-025.md" style="display: inline-flex; text-decoration: none; padding: 6px 12px; font-size: 0.8rem; border-radius: 8px; margin-top: 8px; background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary)); color: #fff; font-weight: bold; border: none;">📖 詳細レポートを開く →</a>
+                </div>
+            </details>
+
+            <details class="issue-card" style="background: rgba(0,0,0,0.2); padding: 16px; border-radius: 12px; border: 1px solid var(--glass-border); text-align: left; margin-bottom: 12px;">
                 <summary style="font-weight: 600; cursor: pointer; color: var(--accent-primary);">[MINOR] v1.10.0 - 顧客個人情報タブのスタティック化とカルテ詳細の完全閲覧専用化 (ISSUE-024)</summary>
                 <div style="margin-top: 12px; font-size: 0.9rem; color: var(--text-dim); line-height: 1.6;">
                     <p style="margin: 0 0 8px 0;">カルテ詳細画面の役割を「閲覧のみ」に徹底するため、「個人情報」タブから入力フォームや保存ボタンを撤去して美しいスタティック表示に書き換えたほか、過去履歴の「✏️ 編集」ボタンを含む詳細画面内の一切の編集用UIを排除しました。新規登録は顧客一覧の「＋ 顧客登録」から、施術記録の追加はカレンダーからのみ行うように役割を整理しました。</p>

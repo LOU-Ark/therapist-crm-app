@@ -60,10 +60,59 @@
                         <!-- JSで動的にカレンダーセルを描画します -->
                     </div>
                     <div id="calendar-day-details" class="calendar-visits-list" style="display: none;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                            <h3 id="calendar-details-title" style="font-size: 1rem; font-weight: 700; margin: 0;">7月20日の記録</h3>
-                            <button id="btn-calendar-add-record" class="btn-primary" style="padding: 6px 12px; font-size: 0.8rem;">＋ 記録追加</button>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid var(--border-glass); padding-bottom: 8px;">
+                            <h3 id="calendar-details-title" style="font-size: 1.05rem; font-weight: 700; margin: 0;">7月20日の記録</h3>
+                            <button id="btn-calendar-add-record" class="btn-primary" style="display: none; padding: 6px 12px; font-size: 0.8rem;">＋ 記録追加</button>
                         </div>
+
+                        <!-- [MINOR v1.6.0] カレンダー直結型クイックインライン記録フォーム -->
+                        <div id="calendar-inline-form-container" style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-glass); border-radius: 16px; padding: 14px; margin-bottom: 16px;">
+                            <h4 style="font-size: 0.85rem; font-weight: 600; margin-bottom: 10px; color: var(--accent-cyan); display: flex; align-items: center; gap: 4px;">✍️ この日の施術記録を追加</h4>
+                            <div style="display: flex; flex-direction: column; gap: 8px;">
+                                <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+                                    <div style="flex: 1; min-width: 140px;">
+                                        <span style="font-size: 0.75rem; color: var(--text-secondary);">対象顧客</span>
+                                        <select id="inline-record-customer-id" class="form-control" style="width: 100%; padding: 8px; font-size: 0.85rem; margin-top: 2px;"></select>
+                                    </div>
+                                    <div style="flex: 1.5; min-width: 160px;">
+                                        <span style="font-size: 0.75rem; color: var(--text-secondary);">施術メニュー</span>
+                                        <input type="text" id="inline-record-type" class="form-control" placeholder="例: アロマ 60分" style="width: 100%; padding: 8px; font-size: 0.85rem; margin-top: 2px;">
+                                    </div>
+                                    <div style="width: 110px;">
+                                        <span style="font-size: 0.75rem; color: var(--text-secondary);">金額 (円)</span>
+                                        <input type="number" id="inline-record-amount" class="form-control" placeholder="例: 8000" style="width: 100%; padding: 8px; font-size: 0.85rem; margin-top: 2px;">
+                                    </div>
+                                </div>
+
+                                <!-- 詳細項目（アコーディオン） -->
+                                <details style="margin-top: 4px;">
+                                    <summary style="font-size: 0.8rem; color: var(--text-secondary); cursor: pointer; user-select: none; padding: 4px 0;">📝 詳細メモを入力する（時間・訴え・処方等）</summary>
+                                    <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 6px; padding-top: 8px; border-top: 1px dashed var(--border-glass);">
+                                        <div style="display: flex; gap: 8px;">
+                                            <div style="flex: 1;">
+                                                <span style="font-size: 0.75rem; color: var(--text-secondary);">時間帯</span>
+                                                <input type="text" id="inline-record-time" class="form-control" placeholder="例: 14:00 - 15:00" style="width: 100%; padding: 8px; font-size: 0.85rem; margin-top: 2px;">
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <span style="font-size: 0.75rem; color: var(--text-secondary);">顧客からの訴え</span>
+                                            <textarea id="inline-record-complaint" class="form-control" placeholder="例: 肩こり、首の重だるさ" style="width: 100%; padding: 8px; font-size: 0.85rem; height: 50px; min-height: 50px; margin-top: 2px; resize: vertical;"></textarea>
+                                        </div>
+                                        <div>
+                                            <span style="font-size: 0.75rem; color: var(--text-secondary);">本日の処方</span>
+                                            <textarea id="inline-record-prescription" class="form-control" placeholder="例: 首と肩のリンパを流すアプローチ" style="width: 100%; padding: 8px; font-size: 0.85rem; height: 50px; min-height: 50px; margin-top: 2px; resize: vertical;"></textarea>
+                                        </div>
+                                        <div>
+                                            <span style="font-size: 0.75rem; color: var(--text-secondary);">施術後のメモ</span>
+                                            <textarea id="inline-record-note" class="form-control" placeholder="例: 首の付け根が非常に硬かった" style="width: 100%; padding: 8px; font-size: 0.85rem; height: 50px; min-height: 50px; margin-top: 2px; resize: vertical;"></textarea>
+                                        </div>
+                                    </div>
+                                </details>
+
+                                <button type="button" id="btn-inline-submit-record" class="btn-primary" style="padding: 10px; font-size: 0.9rem; margin-top: 6px; width: 100%;">この記録を保存する</button>
+                            </div>
+                        </div>
+
                         <div id="calendar-visits-container">
                             <!-- 動的にその日の来店記録がリスト表示されます -->
                         </div>
@@ -77,8 +126,11 @@
                 <section class="detail-view" id="customer-detail-view" style="display: none;">
                     <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1px solid var(--border-glass); padding-bottom: 12px;">
                         <div>
-                            <h2 id="detail-name" style="font-size: 1.4rem; font-weight: 700; margin-bottom: 4px;">山田 花子</h2>
-                            <p id="detail-kana" style="font-size: 0.85rem; color: var(--text-secondary);">ヤマダ ハナコ</p>
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <h2 id="detail-name" style="font-size: 1.4rem; font-weight: 700; margin-bottom: 4px; margin-top: 0;">山田 花子</h2>
+                                <button id="btn-edit-customer" style="background: rgba(255,255,255,0.06); border: 1px solid var(--border-glass); border-radius: 8px; padding: 4px 10px; font-size: 0.75rem; color: var(--text-secondary); cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">✏️ 編集</button>
+                            </div>
+                            <p id="detail-kana" style="font-size: 0.85rem; color: var(--text-secondary); margin: 0;">ヤマダ ハナコ</p>
                         </div>
                         <button id="btn-close-detail" style="background: none; border: none; color: var(--text-secondary); cursor: pointer; font-size: 1.5rem; line-height: 1;">×</button>
                     </div>
@@ -96,8 +148,8 @@
                         <!-- 動的にコンテンツが挿入されます -->
                     </div>
 
-                    <!-- 新規記録を追加するボタン (個人情報タブ以外で表示) -->
-                    <div id="add-record-action" style="margin-top: 8px;">
+                    <!-- 新規記録を追加するボタン (カレンダー直結化により非表示) -->
+                    <div id="add-record-action" style="margin-top: 8px; display: none;">
                         <button id="btn-add-record" class="btn-primary" style="width: 100%;">
                             <span>＋</span> この日の記録を追加
                         </button>
@@ -110,7 +162,7 @@
     <!-- 顧客登録モーダル -->
     <div class="modal-overlay" id="customer-modal">
         <div class="modal-content">
-            <h3 style="font-size: 1.2rem; font-weight: 700; border-bottom: 1px solid var(--border-glass); padding-bottom: 8px;">新規顧客の登録</h3>
+            <h3 id="customer-modal-title" style="font-size: 1.2rem; font-weight: 700; border-bottom: 1px solid var(--border-glass); padding-bottom: 8px;">新規顧客の登録</h3>
             <form id="customer-form" style="display: flex; flex-direction: column; gap: 12px; max-height: 65vh; overflow-y: auto; padding-right: 4px; margin-bottom: 8px;">
                 <div class="form-group">
                     <label for="input-customer-no">顧客No.</label>

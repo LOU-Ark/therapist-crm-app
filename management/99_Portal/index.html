@@ -72,7 +72,7 @@
 <body>
     <header class="header">
         <h1>セラピスト向け顧客管理アプリ</h1>
-        <p>Project Portal Hub <span style="background: var(--accent-secondary); color: #fff; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: bold; margin-left: 8px;">v1.7.0</span></p>
+        <p>Project Portal Hub <span style="background: var(--accent-secondary); color: #fff; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: bold; margin-left: 8px;">v1.10.0</span></p>
         <div style="margin-top: 20px; display: inline-flex; align-items: center; gap: 10px; background: var(--card-bg); padding: 8px 16px; border-radius: 20px; border: 1px solid var(--glass-border); backdrop-filter: blur(10px);">
             <span style="font-size: 0.85rem; color: var(--text-dim);">🌙 Dark</span>
             <input type="range" id="theme-slider" min="0" max="100" value="0" style="width: 120px; accent-color: var(--accent-primary); cursor: pointer;" title="テーマ輝度ブレンド">
@@ -130,6 +130,38 @@
             <div style="font-size: 1.3rem; font-weight: 600; margin-bottom: 16px;">ポータル改善履歴</div>
             
             <details class="issue-card" open style="background: rgba(0,0,0,0.2); padding: 16px; border-radius: 12px; border: 1px solid var(--glass-border); text-align: left; margin-bottom: 12px;">
+                <summary style="font-weight: 600; cursor: pointer; color: var(--accent-primary);">[MINOR] v1.10.0 - 顧客個人情報タブの閲覧専用化と「✏️ 編集」モーダルフローの導入 (ISSUE-024)</summary>
+                <div style="margin-top: 12px; font-size: 0.9rem; color: var(--text-dim); line-height: 1.6;">
+                    <p style="margin: 0 0 8px 0;">カルテ詳細画面の役割を「閲覧・修正」に完全に一本化するため、「個人情報」タブから入力用フォームや「情報を保存する」ボタンを取り除き、読みやすいプレーンテキストのスタティック表示に書き換えました。情報の更新は、顧客名表示のすぐ横に新設した「✏️ 編集」ボタンから、顧客登録モーダルを編集モードとして流用して行えるようにしました。</p>
+                    <a href="viewer.html?doc=../03_Implementation/REPORT-ISSUE-024.md" style="display: inline-flex; text-decoration: none; padding: 6px 12px; font-size: 0.8rem; border-radius: 8px; margin-top: 8px; background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary)); color: #fff; font-weight: bold; border: none;">📖 詳細レポートを開く →</a>
+                </div>
+            </details>
+
+            <details class="issue-card" style="background: rgba(0,0,0,0.2); padding: 16px; border-radius: 12px; border: 1px solid var(--glass-border); text-align: left; margin-bottom: 12px;">
+                <summary style="font-weight: 600; cursor: pointer; color: var(--accent-primary);">v1.9.1 - カルテ詳細画面での新規追加ボタン再表示バグの修正 (ISSUE-023)</summary>
+                <div style="margin-top: 12px; font-size: 0.9rem; color: var(--text-dim); line-height: 1.6;">
+                    <p style="margin: 0 0 8px 0;">v1.9.0 で廃止した「＋ この日の記録を追加」ボタンが、カルテ詳細のタブを切り替えたり他の顧客カルテを表示した際に、機能しない状態で再露出するバグを修正しました。タブ更新処理（<code>renderTabContent</code>）でボタンを強制的に <code>display: block</code> に上書きしていた残存処理を削除し、常に非表示に維持します。</p>
+                    <a href="viewer.html?doc=../03_Implementation/REPORT-ISSUE-023.md" style="display: inline-flex; text-decoration: none; padding: 6px 12px; font-size: 0.8rem; border-radius: 8px; margin-top: 8px; background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary)); color: #fff; font-weight: bold; border: none;">📖 詳細レポートを開く →</a>
+                </div>
+            </details>
+
+            <details class="issue-card" style="background: rgba(0,0,0,0.2); padding: 16px; border-radius: 12px; border: 1px solid var(--glass-border); text-align: left; margin-bottom: 12px;">
+                <summary style="font-weight: 600; cursor: pointer; color: var(--accent-primary);">[MINOR] v1.9.0 - 新規施術記録追加動線のカレンダー画面への完全集約 (ISSUE-022)</summary>
+                <div style="margin-top: 12px; font-size: 0.9rem; color: var(--text-dim); line-height: 1.6;">
+                    <p style="margin: 0 0 8px 0;">施術記録の入力動線の迷いを解消するため、新規の記録追加ボタンを顧客詳細（カルテ詳細）画面から排除しました。新規記録はカレンダー直結フォームからのみ追加でき、顧客一覧（カルテ詳細）画面は「過去履歴の閲覧」および記録上の「✏️ 編集」による過去データの「修正」に特化させ、画面ごとの役割を明確に整理しました。</p>
+                    <a href="viewer.html?doc=../03_Implementation/REPORT-ISSUE-022.md" style="display: inline-flex; text-decoration: none; padding: 6px 12px; font-size: 0.8rem; border-radius: 8px; margin-top: 8px; background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary)); color: #fff; font-weight: bold; border: none;">📖 詳細レポートを開く →</a>
+                </div>
+            </details>
+
+            <details class="issue-card" style="background: rgba(0,0,0,0.2); padding: 16px; border-radius: 12px; border: 1px solid var(--glass-border); text-align: left; margin-bottom: 12px;">
+                <summary style="font-weight: 600; cursor: pointer; color: var(--accent-primary);">[MINOR] v1.8.0 - カレンダー直結インラインクイック記録フォームの導入 (ISSUE-021)</summary>
+                <div style="margin-top: 12px; font-size: 0.9rem; color: var(--text-dim); line-height: 1.6;">
+                    <p style="margin: 0 0 8px 0;">施術記録の追加動線を簡素化するため、カレンダーの日付別リストの上部にインライン入力フォームを埋め込みました。最小限の項目（顧客名、メニュー、金額）でサクッと保存でき、詳細なメモはアコーディオン展開して入力する設計とすることで、カレンダー上の操作だけで記録追加が完結します。</p>
+                    <a href="viewer.html?doc=../03_Implementation/REPORT-ISSUE-021.md" style="display: inline-flex; text-decoration: none; padding: 6px 12px; font-size: 0.8rem; border-radius: 8px; margin-top: 8px; background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary)); color: #fff; font-weight: bold; border: none;">📖 詳細レポートを開く →</a>
+                </div>
+            </details>
+
+            <details class="issue-card" style="background: rgba(0,0,0,0.2); padding: 16px; border-radius: 12px; border: 1px solid var(--glass-border); text-align: left; margin-bottom: 12px;">
                 <summary style="font-weight: 600; cursor: pointer; color: var(--accent-primary);">[MINOR] v1.7.0 - 過去の施術記録を編集する機能の追加 (ISSUE-020)</summary>
                 <div style="margin-top: 12px; font-size: 0.9rem; color: var(--text-dim); line-height: 1.6;">
                     <p style="margin: 0 0 8px 0;">一度作成した施術記録を後から編集できるようにしました。これにより、旧バージョンで作られた記録へ「訴え」「処方」「メモ」を追記できます。記録カードの「✏️ 編集」から既存の追加モーダルが編集モードで開き、既存値がプリフィルされます。編集対象は<strong>配列インデックスではなく一意ID</strong>で特定します（カレンダー経由の追加が <code>unshift</code> のためインデックスは容易にズレ、別記録を破壊する恐れがあるため）。既存記録にはマイグレーションでIDを付与します。<strong>「編集→キャンセル→新規追加」で追加が更新に化けないこと、更新後に件数が増えないこと</strong>まで実測確認済みです。</p>

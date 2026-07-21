@@ -144,6 +144,7 @@ function initApp() {
     const detailName = document.getElementById('detail-name');
     const detailKana = document.getElementById('detail-kana');
     const btnCloseDetail = document.getElementById('btn-close-detail');
+    const btnEditCustomer = document.getElementById('btn-edit-customer'); // [MINOR v1.10.0]
     const tabBtns = document.querySelectorAll('.tab-btn');
     const tabContentArea = document.getElementById('tab-content-area');
     const addRecordAction = document.getElementById('add-record-action');
@@ -151,6 +152,7 @@ function initApp() {
 
     // 顧客登録モーダル
     const customerModal = document.getElementById('customer-modal');
+    const customerModalTitle = document.getElementById('customer-modal-title'); // [MINOR v1.10.0]
     const customerForm = document.getElementById('customer-form');
     const btnCancelCustomer = document.getElementById('btn-cancel-customer');
     const btnSubmitCustomer = document.getElementById('btn-submit-customer');
@@ -165,6 +167,7 @@ function initApp() {
 
     // アプリケーション状態
     let selectedCustomerId = null;
+    let editingCustomer = null; // [MINOR v1.10.0] 顧客編集モード用
     let activeTab = 'visit-count';
 
     // 1. 顧客一覧の描画
@@ -237,11 +240,9 @@ function initApp() {
         tabContentArea.innerHTML = '';
         const records = customer.records || [];
 
-        // 個人情報タブ以外ではレコード追加アクションを表示
-        if (activeTab === 'personal-info') {
+        // [PATCH v1.9.1] カレンダー直結化に伴い、新規記録追加ボタンは常に非表示にする
+        if (addRecordAction) {
             addRecordAction.style.display = 'none';
-        } else {
-            addRecordAction.style.display = 'block';
         }
 
         switch (activeTab) {
@@ -280,140 +281,46 @@ function initApp() {
                         div.className = 'history-item';
                         div.innerHTML = `
                             <div class="history-item-header">
-                                <span>${r.date} ${r.time ? `(${r.time})` : ''}</span>
-                            </div>
-                            <div class="history-item-body">
-                                <div style="font-weight: 600; margin-bottom: 4px;">${r.type}</div>
-                                ${buildRecordDetailsHtml(r)}
-                                ${buildRecordEditButtonHtml(r)}
-                            </div>
-                        `;
-                        attachRecordEditHandler(div, customer.id, r.id);
-                        tabContentArea.appendChild(div);
-                    });
-                }
-                break;
-
-            case 'visit-amount':
-                // 金額の一覧
-                if (records.length === 0) {
-                    tabContentArea.innerHTML = '<p style="color: var(--text-secondary);">支払記録がありません。</p>';
-                } else {
-                    records.forEach(r => {
-                        const div = document.createElement('div');
-                        div.className = 'history-item amount';
-                        div.innerHTML = `
-                            <div class="history-item-header">
-                                <span>${r.date} ${r.time ? `(${r.time})` : ''}</span>
-                                <span style="color: var(--accent-success); font-weight: bold;">${r.amount.toLocaleString()} 円</span>
-                            </div>
-                        `;
-                        tabContentArea.appendChild(div);
-                    });
-                }
-                break;
-
-            case 'personal-info':
-                // 個人情報の一覧・詳細
-                // [ISSUE-018] 色名の定義は data.js の SOUL_COLOR_DEFS を正本とし、
-                // ここで重複定義していた colorNames は廃止した。
-
+                            case 'personal-info':
+                // 個人情報の一覧・詳細 (スタティックな閲覧専用UI)
                 tabContentArea.innerHTML = `
-                    <div style="display: flex; flex-direction: column; gap: 12px;">
-                        <div style="display: flex; gap: 8px;">
-                            <div style="flex: 1;">
-                                <span style="font-size: 0.8rem; color: var(--text-secondary);">顧客No.</span>
-                                <input type="text" id="edit-customer-no" class="form-control" style="width: 100%; margin-top: 2px;" value="${customer.customerNo || ''}">
+                    <div class="read-only-personal-info" style="display: flex; flex-direction: column; gap: 16px; padding: 4px 0;">
+                        <div style="display: flex; gap: 16px; flex-wrap: wrap;">
+                            <div style="flex: 1; min-width: 120px;">
+                                <span style="font-size: 0.8rem; color: var(--text-secondary); display: block; margin-bottom: 4px;">顧客No.</span>
+                                <div style="font-size: 0.95rem; font-weight: 500; color: var(--text-primary);">${customer.customerNo || '未設定'}</div>
                             </div>
-                            <div style="flex: 1;">
-                                <span style="font-size: 0.8rem; color: var(--text-secondary);">電話番号</span>
-                                <input type="tel" id="edit-phone" class="form-control" style="width: 100%; margin-top: 2px;" value="${customer.phone || ''}">
-                            </div>
-                        </div>
-                        <div style="display: flex; gap: 8px;">
-                            <div style="flex: 1;">
-                                <span style="font-size: 0.8rem; color: var(--text-secondary);">誕生日</span>
-                                <input type="date" id="edit-birthday" class="form-control" style="width: 100%; margin-top: 2px;" value="${customer.birthday || ''}">
-                            </div>
-                            <div style="flex: 1;">
-                                <span style="font-size: 0.8rem; color: var(--text-secondary);">紹介者</span>
-                                <input type="text" id="edit-referrer" class="form-control" style="width: 100%; margin-top: 2px;" value="${customer.referrer || ''}">
+                            <div style="flex: 1; min-width: 120px;">
+                                <span style="font-size: 0.8rem; color: var(--text-secondary); display: block; margin-bottom: 4px;">電話番号</span>
+                                <div style="font-size: 0.95rem; font-weight: 500; color: var(--text-primary);">${customer.phone || '未設定'}</div>
                             </div>
                         </div>
-                        <div>
-                            <span style="font-size: 0.8rem; color: var(--text-secondary); display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
-                                Soul Color（最大${MAX_SOUL_COLORS}色・タップで選択／解除）
-                                <span class="soul-color-selected-preview" id="edit-soul-color-preview"></span>
-                            </span>
-                            <div class="soul-color-selector" id="edit-soul-color-container">
-                                ${buildColorChipsHtml()}
+                        <div style="display: flex; gap: 16px; flex-wrap: wrap;">
+                            <div style="flex: 1; min-width: 120px;">
+                                <span style="font-size: 0.8rem; color: var(--text-secondary); display: block; margin-bottom: 4px;">誕生日</span>
+                                <div style="font-size: 0.95rem; font-weight: 500; color: var(--text-primary);">${customer.birthday ? customer.birthday.replace(/-/g, '/') : '未設定'}</div>
+                            </div>
+                            <div style="flex: 1; min-width: 120px;">
+                                <span style="font-size: 0.8rem; color: var(--text-secondary); display: block; margin-bottom: 4px;">紹介者</span>
+                                <div style="font-size: 0.95rem; font-weight: 500; color: var(--text-primary);">${customer.referrer || 'なし'}</div>
                             </div>
                         </div>
                         <div>
-                            <span style="font-size: 0.8rem; color: var(--text-secondary);">初診問診 (体重や病歴など)</span>
-                            <textarea id="edit-initial-consultation-textarea" class="form-control" style="width: 100%; margin-top: 4px; overflow-y: hidden;">${customer.initialConsultation || ''}</textarea>
+                            <span style="font-size: 0.8rem; color: var(--text-secondary); display: block; margin-bottom: 6px;">Soul Color</span>
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                ${buildSoulColorBadgeHtml(getSoulColors(customer), 'sm')}
+                            </div>
                         </div>
                         <div>
-                            <span style="font-size: 0.8rem; color: var(--text-secondary);">特記事項・メモ</span>
-                            <textarea id="edit-memo-textarea" class="form-control" style="width: 100%; margin-top: 4px; overflow-y: hidden;">${customer.memo || ''}</textarea>
+                            <span style="font-size: 0.8rem; color: var(--text-secondary); display: block; margin-bottom: 4px;">初診問診 (体重や病歴など)</span>
+                            <div style="font-size: 0.9rem; line-height: 1.6; color: var(--text-primary); background: rgba(255,255,255,0.01); border: 1px solid var(--border-glass); border-radius: 12px; padding: 12px; min-height: 48px; white-space: pre-wrap;">${customer.initialConsultation || '未記入'}</div>
                         </div>
-                        <button id="btn-save-personal-info" class="btn-primary" style="margin-top: 8px; padding: 10px; font-size: 0.9rem; width: 100%;">情報を保存する</button>
+                        <div>
+                            <span style="font-size: 0.8rem; color: var(--text-secondary); display: block; margin-bottom: 4px;">特記事項・メモ</span>
+                            <div style="font-size: 0.9rem; line-height: 1.6; color: var(--text-primary); background: rgba(255,255,255,0.01); border: 1px solid var(--border-glass); border-radius: 12px; padding: 12px; min-height: 48px; white-space: pre-wrap;">${customer.memo || '未記入'}</div>
+                        </div>
                     </div>
                 `;
-
-                // [ISSUE-018] ソウルカラーを最大5色まで選択できるセレクターとして初期化。
-                // 選択内容は上段3色・下段2色のプレビューにリアルタイム反映する。
-                const editSoulColorContainer = document.getElementById('edit-soul-color-container');
-                const editSoulColorPreview = document.getElementById('edit-soul-color-preview');
-                const getEditSoulColors = initSoulColorSelector(
-                    editSoulColorContainer,
-                    getSoulColors(customer),
-                    (colors) => {
-                        editSoulColorPreview.innerHTML = colors.length
-                            ? buildSoulColorBadgeHtml(colors, 'sm')
-                            : '<span style="font-size: 0.8rem; color: var(--text-secondary);">未設定</span>';
-                    }
-                );
-
-                // テキストエリア自動リサイズ対応
-                const editMemoTextarea = document.getElementById('edit-memo-textarea');
-                const editInitialConsultationTextarea = document.getElementById('edit-initial-consultation-textarea');
-                const btnSavePersonalInfo = document.getElementById('btn-save-personal-info');
-
-                const autoResize = (el) => {
-                    el.style.height = 'auto';
-                    el.style.height = el.scrollHeight + 'px';
-                };
-
-                editMemoTextarea.addEventListener('input', () => autoResize(editMemoTextarea));
-                editInitialConsultationTextarea.addEventListener('input', () => autoResize(editInitialConsultationTextarea));
-                autoResize(editMemoTextarea);
-                autoResize(editInitialConsultationTextarea);
-
-                // メモ変更保存のイベントハンドラ
-                btnSavePersonalInfo.addEventListener('click', () => {
-                    const fields = {
-                        customerNo: document.getElementById('edit-customer-no').value,
-                        phone: document.getElementById('edit-phone').value,
-                        birthday: document.getElementById('edit-birthday').value,
-                        referrer: document.getElementById('edit-referrer').value,
-                        soulColors: getEditSoulColors(),
-                        initialConsultation: editInitialConsultationTextarea.value,
-                        memo: editMemoTextarea.value
-                    };
-
-                    updateCustomer(customer.id, fields);
-
-                    // フィードバック表示
-                    const originalText = btnSavePersonalInfo.textContent;
-                    btnSavePersonalInfo.textContent = '保存しました！';
-                    btnSavePersonalInfo.style.background = 'var(--accent-success)';
-                    setTimeout(() => {
-                        btnSavePersonalInfo.textContent = originalText;
-                        btnSavePersonalInfo.style.background = '';
-                        showCustomerDetail(customer.id);
-                    }, 1000);
-                });
                 break;
         }
     }
@@ -483,17 +390,67 @@ function initApp() {
         });
     });
 
+    // [MINOR v1.10.0] 顧客モーダルを新規登録モードに戻す
+    function resetCustomerModal() {
+        editingCustomer = null;
+        if (customerForm) customerForm.reset();
+        if (customerModalTitle) customerModalTitle.textContent = '新規顧客の登録';
+        if (btnSubmitCustomer) btnSubmitCustomer.textContent = '登録する';
+        resetInputSoulColors(); // カラー選択リセット
+    }
+
     // 顧客登録モーダル表示・非表示
     if (btnAddCustomer) {
         btnAddCustomer.addEventListener('click', () => {
+            resetCustomerModal();
             if (customerModal) customerModal.classList.add('active');
         });
     }
     if (btnCancelCustomer) {
         btnCancelCustomer.addEventListener('click', () => {
             if (customerModal) customerModal.classList.remove('active');
-            if (customerForm) customerForm.reset();
-            resetInputSoulColors(); // カラー選択リセット
+            resetCustomerModal();
+        });
+    }
+
+    // [MINOR v1.10.0] 顧客編集ボタンのクリックハンドラ
+    if (btnEditCustomer) {
+        btnEditCustomer.addEventListener('click', () => {
+            if (!selectedCustomerId) return;
+            const customer = getCustomers().find(c => c.id === selectedCustomerId);
+            if (!customer) return;
+
+            editingCustomer = selectedCustomerId;
+
+            // 既存データをフォームに入力
+            const setVal = (id, value) => {
+                const el = document.getElementById(id);
+                if (el) el.value = value != null ? value : '';
+            };
+            setVal('input-customer-no', customer.customerNo);
+            setVal('input-name', customer.name);
+            setVal('input-kana', customer.kana);
+            setVal('input-phone', customer.phone);
+            setVal('input-birthday', customer.birthday);
+            setVal('input-referrer', customer.referrer);
+            
+            if (inputInitialConsultation) {
+                inputInitialConsultation.value = customer.initialConsultation || '';
+                inputInitialConsultation.style.height = 'auto';
+                inputInitialConsultation.style.height = inputInitialConsultation.scrollHeight + 'px';
+            }
+            if (inputMemo) {
+                inputMemo.value = customer.memo || '';
+                inputMemo.style.height = 'auto';
+                inputMemo.style.height = inputMemo.scrollHeight + 'px';
+            }
+
+            // カラーチップの初期化
+            setupInputSelector(getSoulColors(customer));
+
+            if (customerModalTitle) customerModalTitle.textContent = '顧客情報の編集';
+            if (btnSubmitCustomer) btnSubmitCustomer.textContent = '更新する';
+            if (customerModal) customerModal.classList.add('active');
         });
     }
 
@@ -520,12 +477,30 @@ function initApp() {
             const initialConsultation = inputInitialConsultation ? inputInitialConsultation.value : '';
             const memo = inputMemo ? inputMemo.value : '';
 
+            // [MINOR v1.10.0] 編集モード時の更新処理
+            if (editingCustomer) {
+                const result = updateCustomer(editingCustomer, {
+                    name, kana, phone, memo, customerNo, birthday, soulColors, referrer, initialConsultation
+                });
+                
+                if (customerModal) customerModal.classList.remove('active');
+                resetCustomerModal();
+
+                if (!result) {
+                    alert('顧客情報の更新に失敗しました。');
+                    return;
+                }
+                renderCustomerList(searchInput ? searchInput.value : '');
+                showCustomerDetail(selectedCustomerId); // 詳細画面をリフレッシュ
+                return;
+            }
+
+            // 新規登録処理
             const newCust = addCustomer(name, kana, phone, memo, customerNo, birthday, soulColors, referrer, initialConsultation);
             if (customerModal) customerModal.classList.remove('active');
-            if (customerForm) customerForm.reset();
-            resetInputSoulColors(); // カラー選択リセット
+            resetCustomerModal();
 
-            renderCustomerList();
+            renderCustomerList(searchInput ? searchInput.value : '');
             showCustomerDetail(newCust.id); // 新規登録後に詳細画面を開く
         });
     }
@@ -578,18 +553,6 @@ function initApp() {
     // 記録カードの編集ボタンから呼ばれるコールバックを登録
     onRecordEditRequested = openRecordEditor;
 
-    // レコード登録モーダルの表示・非表示
-    if (btnAddRecord) {
-        btnAddRecord.addEventListener('click', () => {
-            resetRecordModal(); // 直前の編集内容を持ち越さない
-            if (recordCustomerSelectGroup) recordCustomerSelectGroup.style.display = 'none';
-            // デフォルトで今日の日付をセット
-            const today = new Date().toISOString().split('T')[0];
-            const dateEl = document.getElementById('input-date');
-            if (dateEl) dateEl.value = today;
-            if (recordModal) recordModal.classList.add('active');
-        });
-    }
     if (btnCancelRecord) {
         btnCancelRecord.addEventListener('click', () => {
             if (recordModal) recordModal.classList.remove('active');
@@ -721,6 +684,16 @@ function initApp() {
     const btnCalendarAddRecord = document.getElementById('btn-calendar-add-record');
     const recordCustomerSelectGroup = document.getElementById('record-customer-select-group');
     const inputRecordCustomerId = document.getElementById('input-record-customer-id');
+
+    // [MINOR v1.6.0] インライン簡易記録フォーム用のDOM要素
+    const inlineRecordCustomerId = document.getElementById('inline-record-customer-id');
+    const inlineRecordType = document.getElementById('inline-record-type');
+    const inlineRecordAmount = document.getElementById('inline-record-amount');
+    const inlineRecordTime = document.getElementById('inline-record-time');
+    const inlineRecordComplaint = document.getElementById('inline-record-complaint');
+    const inlineRecordPrescription = document.getElementById('inline-record-prescription');
+    const inlineRecordNote = document.getElementById('inline-record-note');
+    const btnInlineSubmitRecord = document.getElementById('btn-inline-submit-record');
 
     let currentYear = new Date().getFullYear();
     let currentMonth = new Date().getMonth();
@@ -881,10 +854,40 @@ function initApp() {
         }
     }
 
+    // [MINOR v1.6.0] インライン簡易記録フォームをクリアする処理
+    function resetInlineForm() {
+        if (inlineRecordType) inlineRecordType.value = '';
+        if (inlineRecordAmount) inlineRecordAmount.value = '';
+        if (inlineRecordTime) inlineRecordTime.value = '';
+        if (inlineRecordComplaint) inlineRecordComplaint.value = '';
+        if (inlineRecordPrescription) inlineRecordPrescription.value = '';
+        if (inlineRecordNote) inlineRecordNote.value = '';
+
+        // 詳細アコーディオン（details）を閉じる
+        const detailsEl = document.querySelector('#calendar-inline-form-container details');
+        if (detailsEl) {
+            detailsEl.removeAttribute('open');
+        }
+    }
+
     function showCalendarDayDetails(dateStr, dailyVisits) {
         if (!calendarDayDetails) return;
         if (calendarDetailsTitle) calendarDetailsTitle.textContent = `${dateStr.replace(/-/g, '/')}の記録`;
         calendarDayDetails.style.display = 'block';
+
+        // [MINOR v1.6.0] インラインフォーム用の対象顧客ドロップダウンを動的に同期する
+        if (inlineRecordCustomerId) {
+            inlineRecordCustomerId.innerHTML = '';
+            const customers = getCustomers();
+            customers.forEach(cust => {
+                const opt = document.createElement('option');
+                opt.value = cust.id;
+                opt.textContent = `${cust.name} (${cust.customerNo || ''})`;
+                inlineRecordCustomerId.appendChild(opt);
+            });
+        }
+        resetInlineForm(); // 日付切り替え時にフォームを初期化
+
         if (calendarVisitsContainer) {
             calendarVisitsContainer.innerHTML = '';
             if (dailyVisits.length === 0) {
@@ -938,6 +941,73 @@ function initApp() {
             });
         }
     }
+
+    // [MINOR v1.6.0] インライン記録フォームの保存処理イベントハンドラ
+    if (btnInlineSubmitRecord) {
+        btnInlineSubmitRecord.addEventListener('click', () => {
+            if (!selectedCalendarDateStr) {
+                alert('日付が選択されていません。');
+                return;
+            }
+            const customerId = inlineRecordCustomerId ? inlineRecordCustomerId.value : '';
+            const type = inlineRecordType ? inlineRecordType.value : '';
+            const amount = inlineRecordAmount ? inlineRecordAmount.value : '';
+
+            const time = inlineRecordTime ? inlineRecordTime.value : '';
+            const clientComplaint = inlineRecordComplaint ? inlineRecordComplaint.value : '';
+            const prescription = inlineRecordPrescription ? inlineRecordPrescription.value : '';
+            const therapistNote = inlineRecordNote ? inlineRecordNote.value : '';
+
+            if (!customerId) {
+                alert('顧客を選択してください。');
+                return;
+            }
+            if (!type) {
+                alert('施術メニューを入力してください。');
+                return;
+            }
+            if (!amount) {
+                alert('金額を入力してください。');
+                return;
+            }
+
+            const updated = addRecord(customerId, selectedCalendarDateStr, type, amount, time, clientComplaint, prescription, therapistNote);
+            if (updated) {
+                // 保存完了の視覚フィードバック
+                const originalText = btnInlineSubmitRecord.textContent;
+                btnInlineSubmitRecord.textContent = '保存しました！';
+                btnInlineSubmitRecord.style.background = 'var(--accent-success)';
+                btnInlineSubmitRecord.style.color = '#fff';
+                btnInlineSubmitRecord.disabled = true;
+
+                setTimeout(() => {
+                    btnInlineSubmitRecord.textContent = originalText;
+                    btnInlineSubmitRecord.style.background = '';
+                    btnInlineSubmitRecord.style.color = '';
+                    btnInlineSubmitRecord.disabled = false;
+
+                    // フォームをクリアしてリフレッシュ
+                    resetInlineForm();
+                    renderCalendar();
+
+                    // 該当日の来店データを再取得して表示を更新する
+                    const customers = getCustomers();
+                    const dailyVisits = [];
+                    customers.forEach(cust => {
+                        if (cust.records) {
+                            cust.records.forEach(rec => {
+                                if (rec.date === selectedCalendarDateStr) {
+                                    dailyVisits.push({ customer: cust, record: rec });
+                                }
+                            });
+                        }
+                    });
+                    showCalendarDayDetails(selectedCalendarDateStr, dailyVisits);
+                }, 1000);
+            }
+        });
+    }
+
 
     if (btnCalendarAddRecord) {
         btnCalendarAddRecord.addEventListener('click', () => {

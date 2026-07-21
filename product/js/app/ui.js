@@ -59,34 +59,18 @@ function buildRecordDetailsHtml(r) {
 }
 
 /**
- * [ISSUE-020] 施術記録カードに「編集」ボタンを描画する。
- * 過去の記録へ訴え・処方・メモを後から追記できるようにするため。
+ * [MINOR v1.10.0] 施術記録カードの「編集」ボタン描画。
+ * カルテ詳細画面の完全な閲覧専用化に伴い、編集ボタンは表示しない（空文字を返す）。
  */
 function buildRecordEditButtonHtml(r) {
-    return `
-        <div style="margin-top: 10px; text-align: right;">
-            <button type="button" class="btn-edit-record" data-record-id="${r.id}"
-                style="background: rgba(255,255,255,0.06); color: var(--text-secondary);
-                       border: 1px solid var(--border-glass); border-radius: 8px;
-                       padding: 4px 12px; font-size: 0.78rem; cursor: pointer;">
-                ✏️ 編集
-            </button>
-        </div>`;
+    return '';
 }
 
 /**
- * [ISSUE-020] 記録カード内の編集ボタンにハンドラを結び付ける。
- * 実際にモーダルを開く処理は initApp 内の openRecordEditor が担うため、
- * ここでは window 経由ではなくコールバックの実体を後から差し込む。
+ * [MINOR v1.10.0] 編集ボタンへのハンドラ結び付けを無効化。
  */
-let onRecordEditRequested = null;
 function attachRecordEditHandler(container, customerId, recordId) {
-    const btn = container.querySelector('.btn-edit-record');
-    if (!btn) return;
-    btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        if (onRecordEditRequested) onRecordEditRequested(customerId, recordId);
-    });
+    // 閲覧専用化のため、処理をスキップ
 }
 
 /**
@@ -281,7 +265,41 @@ function initApp() {
                         div.className = 'history-item';
                         div.innerHTML = `
                             <div class="history-item-header">
-                            case 'personal-info':
+                                <span>来店日</span>
+                                <span>${r.date} ${r.time ? `(${r.time})` : ''}</span>
+                            </div>
+                            <div class="history-item-body">
+                                <div style="font-weight: 600; margin-bottom: 6px; color: var(--text-primary);">${r.type}</div>
+                                ${buildRecordDetailsHtml(r)}
+                                ${buildRecordEditButtonHtml(r)}
+                            </div>
+                        `;
+                        attachRecordEditHandler(div, customer.id, r.id);
+                        tabContentArea.appendChild(div);
+                    });
+                }
+                break;
+
+            case 'visit-amount':
+                // 金額の一覧
+                if (records.length === 0) {
+                    tabContentArea.innerHTML = '<p style="color: var(--text-secondary);">支払記録がありません。</p>';
+                } else {
+                    records.forEach(r => {
+                        const div = document.createElement('div');
+                        div.className = 'history-item amount';
+                        div.innerHTML = `
+                            <div class="history-item-header">
+                                <span>${r.date} ${r.time ? `(${r.time})` : ''}</span>
+                                <span style="color: var(--accent-success); font-weight: bold;">${r.amount.toLocaleString()} 円</span>
+                            </div>
+                        `;
+                        tabContentArea.appendChild(div);
+                    });
+                }
+                break;
+
+            case 'personal-info':
                 // 個人情報の一覧・詳細 (スタティックな閲覧専用UI)
                 tabContentArea.innerHTML = `
                     <div class="read-only-personal-info" style="display: flex; flex-direction: column; gap: 16px; padding: 4px 0;">
@@ -413,47 +431,6 @@ function initApp() {
         });
     }
 
-    // [MINOR v1.10.0] 顧客編集ボタンのクリックハンドラ
-    if (btnEditCustomer) {
-        btnEditCustomer.addEventListener('click', () => {
-            if (!selectedCustomerId) return;
-            const customer = getCustomers().find(c => c.id === selectedCustomerId);
-            if (!customer) return;
-
-            editingCustomer = selectedCustomerId;
-
-            // 既存データをフォームに入力
-            const setVal = (id, value) => {
-                const el = document.getElementById(id);
-                if (el) el.value = value != null ? value : '';
-            };
-            setVal('input-customer-no', customer.customerNo);
-            setVal('input-name', customer.name);
-            setVal('input-kana', customer.kana);
-            setVal('input-phone', customer.phone);
-            setVal('input-birthday', customer.birthday);
-            setVal('input-referrer', customer.referrer);
-            
-            if (inputInitialConsultation) {
-                inputInitialConsultation.value = customer.initialConsultation || '';
-                inputInitialConsultation.style.height = 'auto';
-                inputInitialConsultation.style.height = inputInitialConsultation.scrollHeight + 'px';
-            }
-            if (inputMemo) {
-                inputMemo.value = customer.memo || '';
-                inputMemo.style.height = 'auto';
-                inputMemo.style.height = inputMemo.scrollHeight + 'px';
-            }
-
-            // カラーチップの初期化
-            setupInputSelector(getSoulColors(customer));
-
-            if (customerModalTitle) customerModalTitle.textContent = '顧客情報の編集';
-            if (btnSubmitCustomer) btnSubmitCustomer.textContent = '更新する';
-            if (customerModal) customerModal.classList.add('active');
-        });
-    }
-
     // 顧客フォーム送信処理
     if (btnSubmitCustomer) {
         btnSubmitCustomer.addEventListener('click', () => {
@@ -476,24 +453,6 @@ function initApp() {
             const referrer = referrerEl ? referrerEl.value : '';
             const initialConsultation = inputInitialConsultation ? inputInitialConsultation.value : '';
             const memo = inputMemo ? inputMemo.value : '';
-
-            // [MINOR v1.10.0] 編集モード時の更新処理
-            if (editingCustomer) {
-                const result = updateCustomer(editingCustomer, {
-                    name, kana, phone, memo, customerNo, birthday, soulColors, referrer, initialConsultation
-                });
-                
-                if (customerModal) customerModal.classList.remove('active');
-                resetCustomerModal();
-
-                if (!result) {
-                    alert('顧客情報の更新に失敗しました。');
-                    return;
-                }
-                renderCustomerList(searchInput ? searchInput.value : '');
-                showCustomerDetail(selectedCustomerId); // 詳細画面をリフレッシュ
-                return;
-            }
 
             // 新規登録処理
             const newCust = addCustomer(name, kana, phone, memo, customerNo, birthday, soulColors, referrer, initialConsultation);
